@@ -33,19 +33,11 @@ function resolveEveryAnchorMs(params: {
 }
 
 export function assertSupportedJobSpec(job: Pick<CronJob, "sessionTarget" | "payload">) {
-  if (
-    job.sessionTarget === "main" &&
-    job.payload.kind !== "systemEvent"
-  ) {
+  if (job.sessionTarget === "main" && job.payload.kind !== "systemEvent") {
     throw new Error(t("cron.main_jobs_require_system_event"));
   }
-  if (
-    job.sessionTarget === "isolated" &&
-    job.payload.kind !== "agentTurn"
-  ) {
+  if (job.sessionTarget === "isolated" && job.payload.kind !== "agentTurn") {
     throw new Error(t("cron.isolated_jobs_require_agent_turn"));
-  }
-}
   }
 }
 
