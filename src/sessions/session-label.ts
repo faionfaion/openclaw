@@ -4,11 +4,11 @@ export type ParsedSessionLabel = { ok: true; label: string } | { ok: false; erro
 
 export function parseSessionLabel(raw: unknown): ParsedSessionLabel {
   if (typeof raw !== "string") {
-    return { ok: false, error: "invalid label: must be a string" };
+    return { ok: false, error: t("sessions.invalid_label_string") };
   }
   const trimmed = raw.trim();
   if (!trimmed) {
-    return { ok: false, error: "invalid label: empty" };
+    return { ok: false, error: t("sessions.invalid_label_empty") };
   }
   if (trimmed.length > SESSION_LABEL_MAX_LENGTH) {
     return {

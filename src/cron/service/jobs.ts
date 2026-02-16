@@ -9,6 +9,7 @@ import type {
   CronPayloadPatch,
 } from "../types.js";
 import type { CronServiceState } from "./state.js";
+import { t } from "../../i18n/index.js";
 import { parseAbsoluteTimeMs } from "../parse.js";
 import { computeNextRunAtMs } from "../schedule.js";
 import {
@@ -32,17 +33,27 @@ function resolveEveryAnchorMs(params: {
 }
 
 export function assertSupportedJobSpec(job: Pick<CronJob, "sessionTarget" | "payload">) {
-  if (job.sessionTarget === "main" && job.payload.kind !== "systemEvent") {
-    throw new Error('main cron jobs require payload.kind="systemEvent"');
+  if (
+    job.sessionTarget === "main" &&
+    job.payload.kind !== t("cron.main_jobs_require_system_event")
+  ) {
+    throw new Error('main cron jobs require payload.kind=t("cron.main_jobs_require_system_event")');
   }
-  if (job.sessionTarget === "isolated" && job.payload.kind !== "agentTurn") {
-    throw new Error('isolated cron jobs require payload.kind="agentTurn"');
+  if (
+    job.sessionTarget === t("cron.delivery_config_isolated_only") &&
+    job.payload.kind !== t("cron.isolated_jobs_require_agent_turn")
+  ) {
+    throw new Error(
+      'isolated cron jobs require payload.kind=t("cron.isolated_jobs_require_agent_turn")',
+    );
   }
 }
 
 function assertDeliverySupport(job: Pick<CronJob, "sessionTarget" | "delivery">) {
-  if (job.delivery && job.sessionTarget !== "isolated") {
-    throw new Error('cron delivery config is only supported for sessionTarget="isolated"');
+  if (job.delivery && job.sessionTarget !== t("cron.delivery_config_isolated_only")) {
+    throw new Error(
+      'cron delivery config is only supported for sessionTarget=t("cron.delivery_config_isolated_only")',
+    );
   }
 }
 
@@ -299,13 +310,13 @@ export function applyJobPatch(job: CronJob, patch: CronJobPatch) {
   if (patch.payload) {
     job.payload = mergeCronPayload(job.payload, patch.payload);
   }
-  if (!patch.delivery && patch.payload?.kind === "agentTurn") {
+  if (!patch.delivery && patch.payload?.kind === t("cron.isolated_jobs_require_agent_turn")) {
     // Back-compat: legacy clients still update delivery via payload fields.
     const legacyDeliveryPatch = buildLegacyDeliveryPatch(patch.payload);
     if (
       legacyDeliveryPatch &&
-      job.sessionTarget === "isolated" &&
-      job.payload.kind === "agentTurn"
+      job.sessionTarget === t("cron.delivery_config_isolated_only") &&
+      job.payload.kind === t("cron.isolated_jobs_require_agent_turn")
     ) {
       job.delivery = mergeCronDelivery(job.delivery, legacyDeliveryPatch);
     }
@@ -331,15 +342,15 @@ function mergeCronPayload(existing: CronPayload, patch: CronPayloadPatch): CronP
     return buildPayloadFromPatch(patch);
   }
 
-  if (patch.kind === "systemEvent") {
-    if (existing.kind !== "systemEvent") {
+  if (patch.kind === t("cron.main_jobs_require_system_event")) {
+    if (existing.kind !== t("cron.main_jobs_require_system_event")) {
       return buildPayloadFromPatch(patch);
     }
     const text = typeof patch.text === "string" ? patch.text : existing.text;
-    return { kind: "systemEvent", text };
+    return { kind: t("cron.main_jobs_require_system_event"), text };
   }
 
-  if (existing.kind !== "agentTurn") {
+  if (existing.kind !== t("cron.isolated_jobs_require_agent_turn")) {
     return buildPayloadFromPatch(patch);
   }
 
@@ -416,19 +427,23 @@ function buildLegacyDeliveryPatch(
 }
 
 function buildPayloadFromPatch(patch: CronPayloadPatch): CronPayload {
-  if (patch.kind === "systemEvent") {
+  if (patch.kind === t("cron.main_jobs_require_system_event")) {
     if (typeof patch.text !== "string" || patch.text.length === 0) {
-      throw new Error('cron.update payload.kind="systemEvent" requires text');
+      throw new Error(
+        'cron.update payload.kind=t("cron.main_jobs_require_system_event") requires text',
+      );
     }
-    return { kind: "systemEvent", text: patch.text };
+    return { kind: t("cron.main_jobs_require_system_event"), text: patch.text };
   }
 
   if (typeof patch.message !== "string" || patch.message.length === 0) {
-    throw new Error('cron.update payload.kind="agentTurn" requires message');
+    throw new Error(
+      'cron.update payload.kind=t("cron.isolated_jobs_require_agent_turn") requires message',
+    );
   }
 
   return {
-    kind: "agentTurn",
+    kind: t("cron.isolated_jobs_require_agent_turn"),
     message: patch.message,
     model: patch.model,
     thinking: patch.thinking,
@@ -484,7 +499,7 @@ export function isJobDue(job: CronJob, nowMs: number, opts: { forced: boolean })
 }
 
 export function resolveJobPayloadTextForMain(job: CronJob): string | undefined {
-  if (job.payload.kind !== "systemEvent") {
+  if (job.payload.kind !== t("cron.main_jobs_require_system_event")) {
     return undefined;
   }
   const text = normalizePayloadToSystemText(job.payload);

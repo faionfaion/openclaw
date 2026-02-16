@@ -14,6 +14,7 @@ import {
 import { resolveIsNixMode } from "../../config/paths.js";
 import { resolveGatewayService } from "../../daemon/service.js";
 import { resolveGatewayAuth } from "../../gateway/auth.js";
+import { t } from "../../i18n/index.js";
 import { defaultRuntime } from "../../runtime.js";
 import { formatCliCommand } from "../command-format.js";
 import { buildDaemonServiceSnapshot, createDaemonActionContext } from "./response.js";
@@ -24,24 +25,24 @@ export async function runDaemonInstall(opts: DaemonInstallOptions) {
   const { stdout, warnings, emit, fail } = createDaemonActionContext({ action: "install", json });
 
   if (resolveIsNixMode(process.env)) {
-    fail("Nix mode detected; service install is disabled.");
+    fail(t("cli.daemon_install.nix_mode_disabled"));
     return;
   }
 
   const cfg = loadConfig();
   const portOverride = parsePort(opts.port);
   if (opts.port !== undefined && portOverride === null) {
-    fail("Invalid port");
+    fail(t("cli.daemon_install.invalid_port"));
     return;
   }
   const port = portOverride ?? resolveGatewayPort(cfg);
   if (!Number.isFinite(port) || port <= 0) {
-    fail("Invalid port");
+    fail(t("cli.daemon_install.invalid_port"));
     return;
   }
   const runtimeRaw = opts.runtime ? String(opts.runtime) : DEFAULT_GATEWAY_DAEMON_RUNTIME;
   if (!isGatewayDaemonRuntime(runtimeRaw)) {
-    fail('Invalid --runtime (use "node" or "bun")');
+    fail('Invalid --runtime (use t("cli.daemon_install.invalid_runtime") or "bun")');
     return;
   }
 

@@ -17,6 +17,7 @@ import {
   type SessionEntry,
   type SessionScope,
 } from "../config/sessions.js";
+import { t } from "../i18n/index.js";
 import { formatTimeAgo } from "../infra/format-time/format-relative.ts";
 import { resolveCommitHash } from "../infra/git-commit.js";
 import { listPluginCommands } from "../plugins/commands.js";
@@ -493,12 +494,12 @@ export function buildStatusMessage(args: StatusArgs): string {
 
 const CATEGORY_LABELS: Record<CommandCategory, string> = {
   session: "Session",
-  options: "Options",
+  options: t("help.options_section"),
   status: "Status",
   management: "Management",
   media: "Media",
   tools: "Tools",
-  docks: "Docks",
+  docks: t("categories.session"),
 };
 
 const CATEGORY_ORDER: CommandCategory[] = [
@@ -528,10 +529,10 @@ function groupCommandsByCategory(
 }
 
 export function buildHelpMessage(cfg?: OpenClawConfig): string {
-  const lines = ["ℹ️ Help", ""];
+  const lines = [t("help.title"), ""];
 
   lines.push("Session");
-  lines.push("  /new  |  /reset  |  /compact [instructions]  |  /stop");
+  lines.push(t("help.session_section"));
   lines.push("");
 
   const optionParts = ["/think <level>", "/model <id>", "/verbose on|off"];
@@ -541,19 +542,19 @@ export function buildHelpMessage(cfg?: OpenClawConfig): string {
   if (cfg?.commands?.debug === true) {
     optionParts.push("/debug");
   }
-  lines.push("Options");
+  lines.push(t("help.options_section"));
   lines.push(`  ${optionParts.join("  |  ")}`);
   lines.push("");
 
   lines.push("Status");
-  lines.push("  /status  |  /whoami  |  /context");
+  lines.push(t("help.status_section"));
   lines.push("");
 
   lines.push("Skills");
-  lines.push("  /skill <name> [input]");
+  lines.push(t("help.skills_section"));
 
   lines.push("");
-  lines.push("More: /commands for full list");
+  lines.push(t("help.more_commands"));
 
   return lines.join("\n");
 }
@@ -672,7 +673,7 @@ export function buildCommandsMessagePaginated(
   const items = buildCommandItems(commands, pluginCommands);
 
   if (!isTelegram) {
-    const lines = ["ℹ️ Slash commands", ""];
+    const lines = [t("help.title"), ""];
     lines.push(formatCommandList(items));
     return {
       text: lines.join("\n").trim(),

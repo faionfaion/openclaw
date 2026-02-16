@@ -378,7 +378,9 @@ export const buildTelegramMessageContext = async ({
     // Format cached description with sticker context
     const emoji = allMedia[0]?.stickerMetadata?.emoji;
     const setName = allMedia[0]?.stickerMetadata?.setName;
-    const stickerContext = [emoji, setName ? `from "${setName}"` : null].filter(Boolean).join(" ");
+    const stickerContext = [emoji, setName ? `from t("telegram.sticker_from")` : null]
+      .filter(Boolean)
+      .join(" ");
     placeholder = `[Sticker${stickerContext ? ` ${stickerContext}` : ""}] ${cachedStickerDescription}`;
   }
 

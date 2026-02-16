@@ -32,7 +32,7 @@ export function normalizePollInput(
 ): NormalizedPollInput {
   const question = input.question.trim();
   if (!question) {
-    throw new Error("Poll question is required");
+    throw new Error(t("polls.question_required"));
   }
   const pollOptions = (input.options ?? []).map((option) => option.trim());
   const cleaned = pollOptions.filter(Boolean);

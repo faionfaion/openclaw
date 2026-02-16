@@ -17,6 +17,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 import type { RetryRunner } from "../infra/retry-policy.js";
+import { t } from "../i18n/index.js";
 import { resolvePreferredOpenClawTmpDir } from "../infra/tmp-openclaw-dir.js";
 
 const execFileAsync = promisify(execFile);
@@ -46,7 +47,7 @@ export async function getAudioDuration(filePath: string): Promise<number> {
     ]);
     const duration = parseFloat(stdout.trim());
     if (isNaN(duration)) {
-      throw new Error("Could not parse duration");
+      throw new Error(t("discord.voice_message.duration_parse_error"));
     }
     return Math.round(duration * 100) / 100; // Round to 2 decimal places
   } catch (err) {
@@ -257,7 +258,7 @@ export async function sendDiscordVoiceMessage(
   );
 
   if (!uploadUrlResponse.attachments?.[0]) {
-    throw new Error("Failed to get upload URL for voice message");
+    throw new Error(t("discord.voice_message.upload_url_failed"));
   }
 
   const { upload_url, upload_filename } = uploadUrlResponse.attachments[0];

@@ -2,6 +2,7 @@ import path from "node:path";
 import type { OpenClawConfig, ConfigValidationIssue } from "./types.js";
 import { resolveAgentWorkspaceDir, resolveDefaultAgentId } from "../agents/agent-scope.js";
 import { CHANNEL_IDS, normalizeChatChannelId } from "../channels/registry.js";
+import { t } from "../i18n/index.js";
 import {
   normalizePluginsConfig,
   resolveEnableState,
@@ -57,7 +58,7 @@ function validateIdentityAvatar(config: OpenClawConfig): ConfigValidationIssue[]
     if (avatar.startsWith("~")) {
       issues.push({
         path: `agents.list.${index}.identity.avatar`,
-        message: "identity.avatar must be a workspace-relative path, http(s) URL, or data URI.",
+        message: t("config.validation.avatar_invalid_format"),
       });
       continue;
     }
@@ -65,7 +66,7 @@ function validateIdentityAvatar(config: OpenClawConfig): ConfigValidationIssue[]
     if (hasScheme && !WINDOWS_ABS_RE.test(avatar)) {
       issues.push({
         path: `agents.list.${index}.identity.avatar`,
-        message: "identity.avatar must be a workspace-relative path, http(s) URL, or data URI.",
+        message: t("config.validation.avatar_invalid_format"),
       });
       continue;
     }
@@ -76,7 +77,7 @@ function validateIdentityAvatar(config: OpenClawConfig): ConfigValidationIssue[]
     if (!isWorkspaceAvatarPath(avatar, workspaceDir)) {
       issues.push({
         path: `agents.list.${index}.identity.avatar`,
-        message: "identity.avatar must stay within the agent workspace.",
+        message: t("config.validation.avatar_outside_workspace"),
       });
     }
   }
@@ -273,7 +274,7 @@ function validateConfigObjectWithPluginsBase(
     }
     const trimmed = target.trim();
     if (!trimmed) {
-      issues.push({ path, message: "heartbeat target must not be empty" });
+      issues.push({ path, message: t("config.validation.heartbeat_target_empty") });
       return;
     }
     const normalized = trimmed.toLowerCase();

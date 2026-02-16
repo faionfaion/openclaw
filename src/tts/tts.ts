@@ -22,6 +22,7 @@ import type {
 } from "../config/types.tts.js";
 import { normalizeChannelId } from "../channels/plugins/index.js";
 import { logVerbose } from "../globals.js";
+import { t } from "../i18n/index.js";
 import { stripMarkdown } from "../line/markdown-to-line.js";
 import { isVoiceCompatibleAudio } from "../media/audio.js";
 import { CONFIG_DIR, resolveUserPath } from "../utils.js";
@@ -356,12 +357,12 @@ export function buildTtsSystemPromptHint(cfg: OpenClawConfig): string | undefine
   const summarize = isSummarizationEnabled(prefsPath) ? "on" : "off";
   const autoHint =
     autoMode === "inbound"
-      ? "Only use TTS when the user's last message includes audio/voice."
+      ? t("tts.system_prompt.inbound_only")
       : autoMode === "tagged"
-        ? "Only use TTS when you include [[tts]] or [[tts:text]] tags."
+        ? t("tts.system_prompt.tagged_only")
         : undefined;
   return [
-    "Voice (TTS) is enabled.",
+    t("tts.system_prompt.voice_enabled"),
     autoHint,
     `Keep spoken text ≤${maxLength} chars to avoid auto-summary (summary ${summarize}).`,
     "Use [[tts:...]] and optional [[tts:text]]...[[/tts:text]] to control voice/expressiveness.",
@@ -558,7 +559,7 @@ export async function textToSpeech(params: {
     try {
       if (provider === "edge") {
         if (!config.edge.enabled) {
-          lastError = "edge: disabled";
+          lastError = t("tts.errors.edge_disabled");
           continue;
         }
 
@@ -717,7 +718,7 @@ export async function textToSpeechTelephony(params: {
     const providerStart = Date.now();
     try {
       if (provider === "edge") {
-        lastError = "edge: unsupported for telephony";
+        lastError = t("tts.errors.edge_unsupported_telephony");
         continue;
       }
 

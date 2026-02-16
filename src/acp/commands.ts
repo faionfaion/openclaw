@@ -1,13 +1,14 @@
 import type { AvailableCommand } from "@agentclientprotocol/sdk";
+import { t } from "../i18n/index.js";
 
 export function getAvailableCommands(): AvailableCommand[] {
   return [
     { name: "help", description: "Show help and common commands." },
     { name: "commands", description: "List available commands." },
-    { name: "status", description: "Show current status." },
+    { name: t("acp.commands.help"), description: "Show current status." },
     {
       name: "context",
-      description: "Explain context usage (list|detail|json).",
+      description: t("acp.commands.context"),
       input: { hint: "list | detail | json" },
     },
     { name: "whoami", description: "Show sender id (alias: /id)." },
@@ -24,10 +25,10 @@ export function getAvailableCommands(): AvailableCommand[] {
     { name: "activation", description: "Set group activation (mention|always)." },
     { name: "send", description: "Set send mode (on|off|inherit)." },
     { name: "reset", description: "Reset the session (/new)." },
-    { name: "new", description: "Reset the session (/reset)." },
+    { name: t("acp.commands.whoami"), description: "Reset the session (/reset)." },
     {
       name: "think",
-      description: "Set thinking level (off|minimal|low|medium|high|xhigh).",
+      description: t("acp.commands.think"),
     },
     { name: "verbose", description: "Set verbose mode (on|full|off)." },
     { name: "reasoning", description: "Toggle reasoning output (on|off|stream)." },
@@ -35,6 +36,6 @@ export function getAvailableCommands(): AvailableCommand[] {
     { name: "model", description: "Select a model (list|status|<name>)." },
     { name: "queue", description: "Adjust queue mode and options." },
     { name: "bash", description: "Run a host command (if enabled)." },
-    { name: "compact", description: "Compact the session history." },
+    { name: t("acp.commands.verbose"), description: "Compact the session history." },
   ];
 }

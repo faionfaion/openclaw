@@ -6,6 +6,7 @@ import type { ReplyPayload } from "../types.js";
 import type { FollowupRun } from "./queue.js";
 import { getChannelDock } from "../../channels/dock.js";
 import { normalizeAnyChannelId, normalizeChannelId } from "../../channels/registry.js";
+import { t } from "../../i18n/index.js";
 import { isReasoningTagProvider } from "../../utils/provider-utils.js";
 import { estimateUsageCost, formatTokenCount, formatUsd } from "../../utils/usage-format.js";
 
@@ -66,7 +67,7 @@ export const formatBunFetchSocketError = (message: string) => {
   return [
     "⚠️ LLM connection failed. This could be due to server issues, network problems, or context length exceeded (e.g., with local LLMs like LM Studio). Original error:",
     "```",
-    trimmed || "Unknown error",
+    trimmed || t("auto_reply.errors.unknown_error"),
     "```",
   ].join("\n");
 };

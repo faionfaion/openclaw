@@ -7,6 +7,7 @@ import { loadConfig } from "../config/config.js";
 import { resolveGatewayAuth } from "../gateway/auth.js";
 import { buildGatewayConnectionDetails } from "../gateway/call.js";
 import { GatewayClient } from "../gateway/client.js";
+import { t } from "../i18n/index.js";
 import { isMainModule } from "../infra/is-main.js";
 import { GATEWAY_CLIENT_MODES, GATEWAY_CLIENT_NAMES } from "../utils/message-channel.js";
 import { AcpGatewayAgent } from "./translator.js";
@@ -45,7 +46,7 @@ export function serveAcpGateway(opts: AcpServerOptions = {}): Promise<void> {
     token: token || undefined,
     password: password || undefined,
     clientName: GATEWAY_CLIENT_NAMES.CLI,
-    clientDisplayName: "ACP",
+    clientDisplayName: t("acp.display_name"),
     clientVersion: "acp",
     mode: GATEWAY_CLIENT_MODES.CLI,
     onEvent: (evt) => {

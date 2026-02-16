@@ -16,6 +16,7 @@ import {
   type ModelRef,
 } from "../agents/model-selection.js";
 import { resolveModel } from "../agents/pi-embedded-runner/model.js";
+import { t } from "../i18n/index.js";
 
 const DEFAULT_ELEVENLABS_BASE_URL = "https://api.elevenlabs.io";
 const TEMP_FILE_CLEANUP_DELAY_MS = 5 * 60 * 1000; // 5 minutes
@@ -52,7 +53,7 @@ function normalizeLanguageCode(code?: string): string | undefined {
   }
   const normalized = trimmed.toLowerCase();
   if (!/^[a-z]{2}$/.test(normalized)) {
-    throw new Error("languageCode must be a 2-letter ISO 639-1 code (e.g. en, de, fr)");
+    throw new Error(t("tts.errors.language_code_invalid"));
   }
   return normalized;
 }
@@ -66,7 +67,7 @@ function normalizeApplyTextNormalization(mode?: string): "auto" | "on" | "off" |
   if (normalized === "auto" || normalized === "on" || normalized === "off") {
     return normalized;
   }
-  throw new Error("applyTextNormalization must be one of: auto, on, off");
+  throw new Error(t("tts.errors.normalization_invalid"));
 }
 
 function normalizeSeed(seed?: number): number | undefined {
@@ -75,7 +76,7 @@ function normalizeSeed(seed?: number): number | undefined {
   }
   const next = Math.floor(seed);
   if (!Number.isFinite(next) || next < 0 || next > 4_294_967_295) {
-    throw new Error("seed must be between 0 and 4294967295");
+    throw new Error(t("tts.errors.seed_invalid"));
   }
   return next;
 }
@@ -193,7 +194,7 @@ export function parseTtsDirectives(
             {
               const value = parseNumberValue(rawValue);
               if (value == null) {
-                warnings.push("invalid stability value");
+                warnings.push(t("tts.warnings.invalid_stability"));
                 break;
               }
               requireInRange(value, 0, 1, "stability");
@@ -212,7 +213,7 @@ export function parseTtsDirectives(
             {
               const value = parseNumberValue(rawValue);
               if (value == null) {
-                warnings.push("invalid similarityBoost value");
+                warnings.push(t("tts.warnings.invalid_similarity"));
                 break;
               }
               requireInRange(value, 0, 1, "similarityBoost");
@@ -229,7 +230,7 @@ export function parseTtsDirectives(
             {
               const value = parseNumberValue(rawValue);
               if (value == null) {
-                warnings.push("invalid style value");
+                warnings.push(t("tts.warnings.invalid_style"));
                 break;
               }
               requireInRange(value, 0, 1, "style");
@@ -246,7 +247,7 @@ export function parseTtsDirectives(
             {
               const value = parseNumberValue(rawValue);
               if (value == null) {
-                warnings.push("invalid speed value");
+                warnings.push(t("tts.warnings.invalid_speed"));
                 break;
               }
               requireInRange(value, 0.5, 2, "speed");
@@ -266,7 +267,7 @@ export function parseTtsDirectives(
             {
               const value = parseBooleanValue(rawValue);
               if (value == null) {
-                warnings.push("invalid useSpeakerBoost value");
+                warnings.push(t("tts.warnings.invalid_speaker_boost"));
                 break;
               }
               overrides.elevenlabs = {
@@ -476,7 +477,7 @@ export async function summarizeText(params: {
         .trim();
 
       if (!summary) {
-        throw new Error("No summary returned");
+        throw new Error(t("tts.errors.no_summary_returned"));
       }
 
       return {
@@ -491,7 +492,7 @@ export async function summarizeText(params: {
   } catch (err) {
     const error = err as Error;
     if (error.name === "AbortError") {
-      throw new Error("Summarization timed out", { cause: err });
+      throw new Error(t("tts.errors.summarization_timeout"), { cause: err });
     }
     throw err;
   }
@@ -538,7 +539,7 @@ export async function elevenLabsTTS(params: {
     timeoutMs,
   } = params;
   if (!isValidVoiceId(voiceId)) {
-    throw new Error("Invalid voiceId format");
+    throw new Error(t("tts.errors.invalid_voice_id"));
   }
   assertElevenLabsVoiceSettings(voiceSettings);
   const normalizedLanguage = normalizeLanguageCode(languageCode);

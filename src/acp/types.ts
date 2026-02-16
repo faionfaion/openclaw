@@ -1,4 +1,5 @@
 import type { SessionId } from "@agentclientprotocol/sdk";
+import { t } from "../i18n/index.js";
 import { VERSION } from "../version.js";
 
 export type AcpSession = {
@@ -24,6 +25,6 @@ export type AcpServerOptions = {
 
 export const ACP_AGENT_INFO = {
   name: "openclaw-acp",
-  title: "OpenClaw ACP Gateway",
+  title: t("acp.gateway_title"),
   version: VERSION,
 };

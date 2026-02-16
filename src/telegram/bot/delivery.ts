@@ -6,6 +6,7 @@ import type { RuntimeEnv } from "../../runtime.js";
 import type { StickerMetadata, TelegramContext } from "./types.js";
 import { chunkMarkdownTextWithMode, type ChunkMode } from "../../auto-reply/chunk.js";
 import { danger, logVerbose } from "../../globals.js";
+import { t } from "../../i18n/index.js";
 import { formatErrorMessage } from "../../infra/errors.js";
 import { retryAsync } from "../../infra/retry.js";
 import { mediaKindFromMime } from "../../media/constants.js";
@@ -422,11 +423,11 @@ export async function resolveMedia(
     return null;
   }
   if (!file.file_path) {
-    throw new Error("Telegram getFile returned no file_path");
+    throw new Error(t("telegram.errors.delivery_get_file_no_path"));
   }
   const fetchImpl = proxyFetch ?? globalThis.fetch;
   if (!fetchImpl) {
-    throw new Error("fetch is not available; set channels.telegram.proxy in config");
+    throw new Error(t("telegram.errors.delivery_fetch_unavailable"));
   }
   const url = `https://api.telegram.org/file/bot${token}/${file.file_path}`;
   const fetched = await fetchRemoteMedia({

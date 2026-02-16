@@ -4,6 +4,7 @@ import { abortEmbeddedPiRun } from "../../agents/pi-embedded.js";
 import { updateSessionStore } from "../../config/sessions.js";
 import { logVerbose } from "../../globals.js";
 import { createInternalHookEvent, triggerInternalHook } from "../../hooks/internal-hooks.js";
+import { t } from "../../i18n/index.js";
 import { scheduleGatewaySigusr1Restart, triggerOpenClawRestart } from "../../infra/restart.js";
 import { loadCostUsageSummary, loadSessionCostSummary } from "../../infra/session-cost-usage.js";
 import { formatTokenCount, formatUsd } from "../../utils/usage-format.js";
@@ -64,7 +65,7 @@ export const handleActivationCommand: CommandHandler = async (params, allowTextC
   if (!params.isGroup) {
     return {
       shouldContinue: false,
-      reply: { text: "⚙️ Group activation only applies to group chats." },
+      reply: { text: t("auto_reply.session.group_activation_only") },
     };
   }
   if (!params.command.isAuthorizedSender) {
@@ -76,7 +77,7 @@ export const handleActivationCommand: CommandHandler = async (params, allowTextC
   if (!activationCommand.mode) {
     return {
       shouldContinue: false,
-      reply: { text: "⚙️ Usage: /activation mention|always" },
+      reply: { text: t("auto_reply.session.activation_usage") },
     };
   }
   if (params.sessionEntry && params.sessionStore && params.sessionKey) {
@@ -115,7 +116,7 @@ export const handleSendPolicyCommand: CommandHandler = async (params, allowTextC
   if (!sendPolicyCommand.mode) {
     return {
       shouldContinue: false,
-      reply: { text: "⚙️ Usage: /send on|off|inherit" },
+      reply: { text: t("auto_reply.session.send_usage") },
     };
   }
   if (params.sessionEntry && params.sessionStore && params.sessionKey) {

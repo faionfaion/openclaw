@@ -1,5 +1,6 @@
 import type { CommandHandler } from "./commands-types.js";
 import { logVerbose } from "../../globals.js";
+import { t } from "../../i18n/index.js";
 import { listSkillCommandsForAgents } from "../skill-commands.js";
 import {
   buildCommandsMessage,
@@ -95,7 +96,7 @@ export function buildCommandsPaginationKeyboard(
 
   if (currentPage > 1) {
     buttons.push({
-      text: "◀ Prev",
+      text: t("auto_reply.navigation.prev"),
       callback_data: `commands_page_${currentPage - 1}${suffix}`,
     });
   }
@@ -107,7 +108,7 @@ export function buildCommandsPaginationKeyboard(
 
   if (currentPage < totalPages) {
     buttons.push({
-      text: "Next ▶",
+      text: t("auto_reply.navigation.next"),
       callback_data: `commands_page_${currentPage + 1}${suffix}`,
     });
   }
@@ -183,7 +184,7 @@ export const handleWhoamiCommand: CommandHandler = async (params, allowTextComma
   }
   const senderId = params.ctx.SenderId ?? "";
   const senderUsername = params.ctx.SenderUsername ?? "";
-  const lines = ["🧭 Identity", `Channel: ${params.command.channel}`];
+  const lines = [t("auto_reply.identity.title"), `Channel: ${params.command.channel}`];
   if (senderId) {
     lines.push(`User id: ${senderId}`);
   }

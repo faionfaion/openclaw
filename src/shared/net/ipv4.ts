@@ -1,11 +1,11 @@
 export function validateIPv4AddressInput(value: string | undefined): string | undefined {
   if (!value) {
-    return "IP address is required for custom bind mode";
+    return t("config.validation.ipv4_required");
   }
   const trimmed = value.trim();
   const parts = trimmed.split(".");
   if (parts.length !== 4) {
-    return "Invalid IPv4 address (e.g., 192.168.1.100)";
+    return t("config.validation.ipv4_invalid_format");
   }
   if (
     parts.every((part) => {
@@ -15,5 +15,5 @@ export function validateIPv4AddressInput(value: string | undefined): string | un
   ) {
     return undefined;
   }
-  return "Invalid IPv4 address (each octet must be 0-255)";
+  return t("config.validation.ipv4_octet_range");
 }

@@ -48,7 +48,7 @@ async function noteDiscordTokenHelp(prompter: WizardPrompter): Promise<void> {
       "1) Discord Developer Portal → Applications → New Application",
       "2) Bot → Add Bot → Reset Token → copy token",
       "3) OAuth2 → URL Generator → scope 'bot' → invite to your server",
-      "Tip: enable Message Content Intent if you need message text. (Bot → Privileged Gateway Intents → Message Content Intent)",
+      t("onboarding.discord.message_content_intent_tip"),
       `Docs: ${formatDocsLink("/discord", "discord")}`,
     ].join("\n"),
     "Discord bot token",
@@ -168,11 +168,11 @@ async function promptDiscordAllowFrom(params: {
   await params.prompter.note(
     [
       "Allowlist Discord DMs by username (we resolve to user ids).",
-      "Examples:",
+      t("onboarding.discord.allowlist_description"),
       "- 123456789012345678",
       "- @alice",
       "- alice#1234",
-      "Multiple entries: comma-separated.",
+      t("onboarding.common.multiple_entries"),
       `Docs: ${formatDocsLink("/discord", "discord")}`,
     ].join("\n"),
     "Discord allowlist",
@@ -197,17 +197,18 @@ async function promptDiscordAllowFrom(params: {
 
   while (true) {
     const entry = await params.prompter.text({
-      message: "Discord allowFrom (usernames or ids)",
+      message: t("onboarding.discord.allowfrom_message"),
       placeholder: "@alice, 123456789012345678",
       initialValue: existing[0] ? String(existing[0]) : undefined,
-      validate: (value) => (String(value ?? "").trim() ? undefined : "Required"),
+      validate: (value) =>
+        String(value ?? "").trim() ? undefined : t("onboarding.discord.enter_bot_token"),
     });
     const parts = parseInputs(String(entry));
     if (!token) {
       const ids = parts.map(parseId).filter(Boolean) as string[];
       if (ids.length !== parts.length) {
         await params.prompter.note(
-          "Bot token missing; use numeric user ids (or mention form) only.",
+          t("onboarding.discord.token_missing_use_ids"),
           "Discord allowlist",
         );
         continue;
@@ -241,7 +242,7 @@ async function promptDiscordAllowFrom(params: {
 }
 
 const dmPolicy: ChannelOnboardingDmPolicy = {
-  label: "Discord",
+  label: t("onboarding.discord.label"),
   channel,
   policyKey: "channels.discord.dmPolicy",
   allowFromKey: "channels.discord.allowFrom",
@@ -275,7 +276,7 @@ export const discordOnboardingAdapter: ChannelOnboardingAdapter = {
       discordAccountId = await promptAccountId({
         cfg,
         prompter,
-        label: "Discord",
+        label: t("onboarding.discord.label"),
         currentId: discordAccountId,
         listAccountIds: listDiscordAccountIds,
         defaultAccountId: defaultDiscordAccountId,
@@ -298,7 +299,7 @@ export const discordOnboardingAdapter: ChannelOnboardingAdapter = {
     }
     if (canUseEnv && !resolvedAccount.config.token) {
       const keepEnv = await prompter.confirm({
-        message: "DISCORD_BOT_TOKEN detected. Use env var?",
+        message: t("onboarding.discord.env_token_detected"),
         initialValue: true,
       });
       if (keepEnv) {
@@ -313,20 +314,22 @@ export const discordOnboardingAdapter: ChannelOnboardingAdapter = {
         token = String(
           await prompter.text({
             message: "Enter Discord bot token",
-            validate: (value) => (value?.trim() ? undefined : "Required"),
+            validate: (value) =>
+              value?.trim() ? undefined : t("onboarding.discord.enter_bot_token"),
           }),
         ).trim();
       }
     } else if (hasConfigToken) {
       const keep = await prompter.confirm({
-        message: "Discord token already configured. Keep it?",
+        message: t("onboarding.discord.token_configured_keep"),
         initialValue: true,
       });
       if (!keep) {
         token = String(
           await prompter.text({
             message: "Enter Discord bot token",
-            validate: (value) => (value?.trim() ? undefined : "Required"),
+            validate: (value) =>
+              value?.trim() ? undefined : t("onboarding.discord.enter_bot_token"),
           }),
         ).trim();
       }
@@ -334,7 +337,8 @@ export const discordOnboardingAdapter: ChannelOnboardingAdapter = {
       token = String(
         await prompter.text({
           message: "Enter Discord bot token",
-          validate: (value) => (value?.trim() ? undefined : "Required"),
+          validate: (value) =>
+            value?.trim() ? undefined : t("onboarding.discord.enter_bot_token"),
         }),
       ).trim();
     }
@@ -383,7 +387,7 @@ export const discordOnboardingAdapter: ChannelOnboardingAdapter = {
     );
     const accessConfig = await promptChannelAccessConfig({
       prompter,
-      label: "Discord channels",
+      label: t("onboarding.discord.channels_label"),
       currentPolicy: resolvedAccount.config.groupPolicy ?? "allowlist",
       currentEntries,
       placeholder: "My Server/#general, guildId/channelId, #support",
@@ -435,12 +439,12 @@ export const discordOnboardingAdapter: ChannelOnboardingAdapter = {
               if (unresolved.length > 0) {
                 summary.push(`Unresolved (kept as typed): ${unresolved.join(", ")}`);
               }
-              await prompter.note(summary.join("\n"), "Discord channels");
+              await prompter.note(summary.join("\n"), t("onboarding.discord.channels_label"));
             }
           } catch (err) {
             await prompter.note(
               `Channel lookup failed; keeping entries as typed. ${String(err)}`,
-              "Discord channels",
+              t("onboarding.discord.channels_label"),
             );
           }
         }

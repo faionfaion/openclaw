@@ -24,6 +24,7 @@ import { resolveNativeSkillsEnabled } from "../config/commands.js";
 import { createConfigIO } from "../config/config.js";
 import { collectIncludePathsRecursive } from "../config/includes-scan.js";
 import { resolveOAuthDir } from "../config/paths.js";
+import { t } from "../i18n/index.js";
 import { normalizePluginsConfig } from "../plugins/config-state.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import {
@@ -286,7 +287,7 @@ export async function collectPluginsTrustFindings(params: {
     findings.push({
       checkId: "plugins.extensions_no_allowlist",
       severity: skillCommandsLikelyExposed ? "critical" : "warn",
-      title: "Extensions exist but plugins.allow is not set",
+      title: t("security.audit.extensions_exist_no_allow"),
       detail:
         `Found ${pluginDirs.length} extension(s) under ${extensionsDir}. Without plugins.allow, any discovered plugin id may load (depending on config and plugin behavior).` +
         (skillCommandsLikelyExposed
@@ -358,7 +359,7 @@ export async function collectPluginsTrustFindings(params: {
       findings.push({
         checkId: "plugins.tools_reachable_permissive_policy",
         severity: "warn",
-        title: "Extension plugin tools may be reachable under permissive tool policy",
+        title: t("security.audit.extension_tools_permissive"),
         detail:
           `Enabled extension plugins: ${enabledExtensionPluginIds.join(", ")}.\n` +
           `Permissive tool policy contexts:\n${permissiveContexts.map((entry) => `- ${entry}`).join("\n")}`,
@@ -405,7 +406,7 @@ export async function collectIncludeFilePermFindings(params: {
       findings.push({
         checkId: "fs.config_include.perms_writable",
         severity: "critical",
-        title: "Config include file is writable by others",
+        title: t("security.audit.config_include_writable"),
         detail: `${formatPermissionDetail(p, perms)}; another user could influence your effective config.`,
         remediation: formatPermissionRemediation({
           targetPath: p,
@@ -419,7 +420,7 @@ export async function collectIncludeFilePermFindings(params: {
       findings.push({
         checkId: "fs.config_include.perms_world_readable",
         severity: "critical",
-        title: "Config include file is world-readable",
+        title: t("security.audit.config_include_world_readable"),
         detail: `${formatPermissionDetail(p, perms)}; include files can contain tokens and private settings.`,
         remediation: formatPermissionRemediation({
           targetPath: p,
@@ -433,7 +434,7 @@ export async function collectIncludeFilePermFindings(params: {
       findings.push({
         checkId: "fs.config_include.perms_group_readable",
         severity: "warn",
-        title: "Config include file is group-readable",
+        title: t("security.audit.config_include_group_readable"),
         detail: `${formatPermissionDetail(p, perms)}; include files can contain tokens and private settings.`,
         remediation: formatPermissionRemediation({
           targetPath: p,
@@ -469,7 +470,7 @@ export async function collectStateDeepFilesystemFindings(params: {
       findings.push({
         checkId: "fs.credentials_dir.perms_writable",
         severity: "critical",
-        title: "Credentials dir is writable by others",
+        title: t("security.audit.credentials_dir_writable"),
         detail: `${formatPermissionDetail(oauthDir, oauthPerms)}; another user could drop/modify credential files.`,
         remediation: formatPermissionRemediation({
           targetPath: oauthDir,
@@ -483,7 +484,7 @@ export async function collectStateDeepFilesystemFindings(params: {
       findings.push({
         checkId: "fs.credentials_dir.perms_readable",
         severity: "warn",
-        title: "Credentials dir is readable by others",
+        title: t("security.audit.credentials_dir_readable"),
         detail: `${formatPermissionDetail(oauthDir, oauthPerms)}; credentials and allowlists can be sensitive.`,
         remediation: formatPermissionRemediation({
           targetPath: oauthDir,
@@ -518,7 +519,7 @@ export async function collectStateDeepFilesystemFindings(params: {
         findings.push({
           checkId: "fs.auth_profiles.perms_writable",
           severity: "critical",
-          title: "auth-profiles.json is writable by others",
+          title: t("security.audit.auth_profiles_writable"),
           detail: `${formatPermissionDetail(authPath, authPerms)}; another user could inject credentials.`,
           remediation: formatPermissionRemediation({
             targetPath: authPath,
@@ -532,7 +533,7 @@ export async function collectStateDeepFilesystemFindings(params: {
         findings.push({
           checkId: "fs.auth_profiles.perms_readable",
           severity: "warn",
-          title: "auth-profiles.json is readable by others",
+          title: t("security.audit.auth_profiles_readable"),
           detail: `${formatPermissionDetail(authPath, authPerms)}; auth-profiles.json contains API keys and OAuth tokens.`,
           remediation: formatPermissionRemediation({
             targetPath: authPath,
@@ -557,7 +558,7 @@ export async function collectStateDeepFilesystemFindings(params: {
         findings.push({
           checkId: "fs.sessions_store.perms_readable",
           severity: "warn",
-          title: "sessions.json is readable by others",
+          title: t("security.audit.sessions_readable"),
           detail: `${formatPermissionDetail(storePath, storePerms)}; routing and transcript metadata can be sensitive.`,
           remediation: formatPermissionRemediation({
             targetPath: storePath,
@@ -587,7 +588,7 @@ export async function collectStateDeepFilesystemFindings(params: {
           findings.push({
             checkId: "fs.log_file.perms_readable",
             severity: "warn",
-            title: "Log file is readable by others",
+            title: t("security.audit.log_file_readable"),
             detail: `${formatPermissionDetail(logPath, logPerms)}; logs can contain private messages and tool output.`,
             remediation: formatPermissionRemediation({
               targetPath: logPath,
@@ -629,7 +630,7 @@ export async function collectPluginsCodeSafetyFindings(params: {
     findings.push({
       checkId: "plugins.code_safety.scan_failed",
       severity: "warn",
-      title: "Plugin extensions directory scan failed",
+      title: t("security.audit.plugin_directory_scan_failed"),
       detail: `Static code scan could not list extensions directory: ${String(err)}`,
       remediation:
         "Check file permissions and plugin layout, then rerun `openclaw security audit --deep`.",

@@ -1,6 +1,7 @@
 import type { ReplyPayload } from "../types.js";
 import type { CommandHandler } from "./commands-types.js";
 import { logVerbose } from "../../globals.js";
+import { t } from "../../i18n/index.js";
 import {
   getLastTtsAttempt,
   getTtsMaxLength,
@@ -93,14 +94,14 @@ export const handleTtsCommands: CommandHandler = async (params, allowTextCommand
     return { shouldContinue: false, reply: ttsUsage() };
   }
 
-  if (action === "on") {
+  if (action === t("auto_reply.tts.summary_enabled")) {
     setTtsEnabled(prefsPath, true);
-    return { shouldContinue: false, reply: { text: "🔊 TTS enabled." } };
+    return { shouldContinue: false, reply: { text: t("auto_reply.tts.enabled") } };
   }
 
   if (action === "off") {
     setTtsEnabled(prefsPath, false);
-    return { shouldContinue: false, reply: { text: "🔇 TTS disabled." } };
+    return { shouldContinue: false, reply: { text: t("auto_reply.tts.disabled") } };
   }
 
   if (action === "audio") {
@@ -207,7 +208,7 @@ export const handleTtsCommands: CommandHandler = async (params, allowTextCommand
     if (!Number.isFinite(next) || next < 100 || next > 4096) {
       return {
         shouldContinue: false,
-        reply: { text: "❌ Limit must be between 100 and 4096 characters." },
+        reply: { text: t("auto_reply.tts.limit_invalid") },
       };
     }
     setTtsMaxLength(prefsPath, next);
@@ -225,7 +226,7 @@ export const handleTtsCommands: CommandHandler = async (params, allowTextCommand
         shouldContinue: false,
         reply: {
           text:
-            `📝 TTS auto-summary: ${enabled ? "on" : "off"}.\n\n` +
+            `📝 TTS auto-summary: ${enabled ? t("auto_reply.tts.summary_enabled") : "off"}.\n\n` +
             `When text exceeds ${maxLen} chars:\n` +
             `• ON: summarizes text, then generates audio\n` +
             `• OFF: truncates text, then generates audio\n\n` +
@@ -234,14 +235,17 @@ export const handleTtsCommands: CommandHandler = async (params, allowTextCommand
       };
     }
     const requested = args.trim().toLowerCase();
-    if (requested !== "on" && requested !== "off") {
+    if (requested !== t("auto_reply.tts.summary_enabled") && requested !== "off") {
       return { shouldContinue: false, reply: ttsUsage() };
     }
-    setSummarizationEnabled(prefsPath, requested === "on");
+    setSummarizationEnabled(prefsPath, requested === t("auto_reply.tts.summary_enabled"));
     return {
       shouldContinue: false,
       reply: {
-        text: requested === "on" ? "✅ TTS auto-summary enabled." : "❌ TTS auto-summary disabled.",
+        text:
+          requested === t("auto_reply.tts.summary_enabled")
+            ? "✅ TTS auto-summary enabled."
+            : "❌ TTS auto-summary disabled.",
       },
     };
   }
@@ -258,7 +262,7 @@ export const handleTtsCommands: CommandHandler = async (params, allowTextCommand
       `State: ${enabled ? "✅ enabled" : "❌ disabled"}`,
       `Provider: ${provider} (${hasKey ? "✅ configured" : "❌ not configured"})`,
       `Text limit: ${maxLength} chars`,
-      `Auto-summary: ${summarize ? "on" : "off"}`,
+      `Auto-summary: ${summarize ? t("auto_reply.tts.summary_enabled") : "off"}`,
     ];
     if (last) {
       const timeAgo = Math.round((Date.now() - last.timestamp) / 1000);

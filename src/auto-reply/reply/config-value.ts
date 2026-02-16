@@ -4,7 +4,7 @@ export function parseConfigValue(raw: string): {
 } {
   const trimmed = raw.trim();
   if (!trimmed) {
-    return { error: "Missing value." };
+    return { error: t("auto_reply.config.missing_value") };
   }
 
   if (trimmed.startsWith("{") || trimmed.startsWith("[")) {

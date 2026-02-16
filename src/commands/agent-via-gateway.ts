@@ -6,6 +6,7 @@ import { formatCliCommand } from "../cli/command-format.js";
 import { withProgress } from "../cli/progress.js";
 import { loadConfig } from "../config/config.js";
 import { callGateway, randomIdempotencyKey } from "../gateway/call.js";
+import { t } from "../i18n/index.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import {
   GATEWAY_CLIENT_MODES,
@@ -123,7 +124,7 @@ export async function agentViaGatewayCommand(opts: AgentCliOpts, runtime: Runtim
 
   const response = await withProgress(
     {
-      label: "Waiting for agent reply…",
+      label: t("commands.agent.waiting_for_reply"),
       indeterminate: true,
       enabled: opts.json !== true,
     },

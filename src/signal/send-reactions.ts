@@ -3,6 +3,7 @@
  */
 
 import { loadConfig } from "../config/config.js";
+import { t } from "../i18n/index.js";
 import { resolveSignalAccount } from "./accounts.js";
 import { signalRpcRequest } from "./client.js";
 import { resolveSignalRpcContext } from "./rpc-context.js";
@@ -153,7 +154,7 @@ export async function sendReactionSignal(
       missingRecipient: "Recipient or groupId is required for Signal reaction",
       invalidTargetTimestamp: "Valid targetTimestamp is required for Signal reaction",
       missingEmoji: "Emoji is required for Signal reaction",
-      missingTargetAuthor: "targetAuthor is required for group reactions",
+      missingTargetAuthor: t("signal.reactions.missing_recipient"),
     },
   });
 }
@@ -181,7 +182,7 @@ export async function removeReactionSignal(
       missingRecipient: "Recipient or groupId is required for Signal reaction removal",
       invalidTargetTimestamp: "Valid targetTimestamp is required for Signal reaction removal",
       missingEmoji: "Emoji is required for Signal reaction removal",
-      missingTargetAuthor: "targetAuthor is required for group reaction removal",
+      missingTargetAuthor: t("signal.reactions.missing_recipient"),
     },
   });
 }

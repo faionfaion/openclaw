@@ -25,7 +25,7 @@ function warnInvalidAllowFromEntries(entries: string[]) {
         "[telegram] Invalid allowFrom entry:",
         JSON.stringify(entry),
         "- allowFrom/groupAllowFrom authorization requires numeric Telegram sender IDs only.",
-        'If you had "@username" entries, re-run onboarding (it resolves @username to IDs) or replace them manually.',
+        'If you had t("telegram.errors.username_resolve_help") entries, re-run onboarding (it resolves @username to IDs) or replace them manually.',
       ].join(" "),
     );
   }

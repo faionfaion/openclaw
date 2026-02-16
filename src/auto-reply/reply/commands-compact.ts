@@ -12,6 +12,7 @@ import {
   resolveSessionFilePathOptions,
 } from "../../config/sessions.js";
 import { logVerbose } from "../../globals.js";
+import { t } from "../../i18n/index.js";
 import { enqueueSystemEvent } from "../../infra/system-events.js";
 import { formatContextUsageShort, formatTokenCount } from "../status.js";
 import { stripMentions, stripStructuralPrefixes } from "./mentions.js";
@@ -60,7 +61,7 @@ export const handleCompactCommand: CommandHandler = async (params) => {
   if (!params.sessionEntry?.sessionId) {
     return {
       shouldContinue: false,
-      reply: { text: "⚙️ Compaction unavailable (missing session id)." },
+      reply: { text: t("auto_reply.compaction_unavailable") },
     };
   }
   const sessionId = params.sessionEntry.sessionId;
