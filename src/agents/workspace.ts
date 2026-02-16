@@ -20,6 +20,7 @@ export function resolveDefaultAgentWorkspaceDir(
 }
 
 export const DEFAULT_AGENT_WORKSPACE_DIR = resolveDefaultAgentWorkspaceDir();
+export const DEFAULT_NOW_FILENAME = "NOW.md";
 export const DEFAULT_AGENTS_FILENAME = "AGENTS.md";
 export const DEFAULT_SOUL_FILENAME = "SOUL.md";
 export const DEFAULT_TOOLS_FILENAME = "TOOLS.md";
@@ -79,6 +80,7 @@ async function loadTemplate(name: string): Promise<string> {
 }
 
 export type WorkspaceBootstrapFileName =
+  | typeof DEFAULT_NOW_FILENAME
   | typeof DEFAULT_AGENTS_FILENAME
   | typeof DEFAULT_SOUL_FILENAME
   | typeof DEFAULT_TOOLS_FILENAME
@@ -104,6 +106,7 @@ type WorkspaceOnboardingState = {
 
 /** Set of recognized bootstrap filenames for runtime validation */
 const VALID_BOOTSTRAP_NAMES: ReadonlySet<string> = new Set([
+  DEFAULT_NOW_FILENAME,
   DEFAULT_AGENTS_FILENAME,
   DEFAULT_SOUL_FILENAME,
   DEFAULT_TOOLS_FILENAME,
@@ -416,6 +419,10 @@ export async function loadWorkspaceBootstrapFiles(dir: string): Promise<Workspac
     name: WorkspaceBootstrapFileName;
     filePath: string;
   }> = [
+    {
+      name: DEFAULT_NOW_FILENAME,
+      filePath: path.join(resolvedDir, DEFAULT_NOW_FILENAME),
+    },
     {
       name: DEFAULT_AGENTS_FILENAME,
       filePath: path.join(resolvedDir, DEFAULT_AGENTS_FILENAME),
