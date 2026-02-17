@@ -3,7 +3,6 @@ import type { DmPolicy } from "../../../config/types.js";
 import type { WizardPrompter } from "../../../wizard/prompts.js";
 import type { ChannelOnboardingAdapter, ChannelOnboardingDmPolicy } from "../onboarding-types.js";
 import { formatCliCommand } from "../../../cli/command-format.js";
-import { t } from "../../../i18n/index.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../routing/session-key.js";
 import {
   listTelegramAccountIds,
@@ -11,7 +10,7 @@ import {
   resolveTelegramAccount,
 } from "../../../telegram/accounts.js";
 import { formatDocsLink } from "../../../terminal/links.js";
-import { addWildcardAllowFrom, promptAccountId } from "./helpers.js";
+import { addWildcardAllowFrom, mergeAllowFromEntries, promptAccountId } from "./helpers.js";
 
 const channel = "telegram" as const;
 
@@ -37,7 +36,7 @@ async function noteTelegramTokenHelp(prompter: WizardPrompter): Promise<void> {
       "1) Open Telegram and chat with @BotFather",
       "2) Run /newbot (or /mybots)",
       "3) Copy the token (looks like 123456:ABC...)",
-      t("onboarding.telegram.env_token_tip"),
+      "Tip: you can also set TELEGRAM_BOT_TOKEN in your env.",
       `Docs: ${formatDocsLink("/telegram")}`,
       "Website: https://openclaw.ai",
     ].join("\n"),
@@ -49,7 +48,7 @@ async function noteTelegramUserIdHelp(prompter: WizardPrompter): Promise<void> {
   await prompter.note(
     [
       `1) DM your bot, then read from.id in \`${formatCliCommand("openclaw logs --follow")}\` (safest)`,
-      t("onboarding.telegram.get_chat_id_tip"),
+      "2) Or call https://api.telegram.org/bot<bot_token>/getUpdates and read message.from.id",
       "3) Third-party: DM @userinfobot or @getidsbot",
       `Docs: ${formatDocsLink("/telegram")}`,
       "Website: https://openclaw.ai",
@@ -70,10 +69,7 @@ async function promptTelegramAllowFrom(params: {
 
   const token = resolved.token;
   if (!token) {
-    await prompter.note(
-      t("onboarding.telegram.token_missing_no_username_lookup"),
-      t("onboarding.telegram.label"),
-    );
+    await prompter.note("Telegram token missing; username lookup is unavailable.", "Telegram");
   }
 
   const resolveTelegramUserId = async (raw: string): Promise<string | null> => {
@@ -119,11 +115,10 @@ async function promptTelegramAllowFrom(params: {
   let resolvedIds: string[] = [];
   while (resolvedIds.length === 0) {
     const entry = await prompter.text({
-      message: t("onboarding.telegram.allowfrom_message"),
+      message: "Telegram allowFrom (numeric sender id; @username resolves to id)",
       placeholder: "@username",
       initialValue: existingAllowFrom[0] ? String(existingAllowFrom[0]) : undefined,
-      validate: (value) =>
-        String(value ?? "").trim() ? undefined : t("onboarding.telegram.enter_bot_token"),
+      validate: (value) => (String(value ?? "").trim() ? undefined : "Required"),
     });
     const parts = parseInput(String(entry));
     const results = await Promise.all(parts.map((part) => resolveTelegramUserId(part)));
@@ -138,11 +133,7 @@ async function promptTelegramAllowFrom(params: {
     resolvedIds = results.filter(Boolean) as string[];
   }
 
-  const merged = [
-    ...existingAllowFrom.map((item) => String(item).trim()).filter(Boolean),
-    ...resolvedIds,
-  ];
-  const unique = [...new Set(merged)];
+  const unique = mergeAllowFromEntries(existingAllowFrom, resolvedIds);
 
   if (accountId === DEFAULT_ACCOUNT_ID) {
     return {
@@ -197,7 +188,7 @@ async function promptTelegramAllowFromForAccount(params: {
 }
 
 const dmPolicy: ChannelOnboardingDmPolicy = {
-  label: t("onboarding.telegram.label"),
+  label: "Telegram",
   channel,
   policyKey: "channels.telegram.dmPolicy",
   allowFromKey: "channels.telegram.allowFrom",
@@ -236,7 +227,7 @@ export const telegramOnboardingAdapter: ChannelOnboardingAdapter = {
       telegramAccountId = await promptAccountId({
         cfg,
         prompter,
-        label: t("onboarding.telegram.label"),
+        label: "Telegram",
         currentId: telegramAccountId,
         listAccountIds: listTelegramAccountIds,
         defaultAccountId: defaultTelegramAccountId,
@@ -261,7 +252,7 @@ export const telegramOnboardingAdapter: ChannelOnboardingAdapter = {
     }
     if (canUseEnv && !resolvedAccount.config.botToken) {
       const keepEnv = await prompter.confirm({
-        message: t("onboarding.telegram.env_token_detected"),
+        message: "TELEGRAM_BOT_TOKEN detected. Use env var?",
         initialValue: true,
       });
       if (keepEnv) {
@@ -279,22 +270,20 @@ export const telegramOnboardingAdapter: ChannelOnboardingAdapter = {
         token = String(
           await prompter.text({
             message: "Enter Telegram bot token",
-            validate: (value) =>
-              value?.trim() ? undefined : t("onboarding.telegram.enter_bot_token"),
+            validate: (value) => (value?.trim() ? undefined : "Required"),
           }),
         ).trim();
       }
     } else if (hasConfigToken) {
       const keep = await prompter.confirm({
-        message: t("onboarding.telegram.token_configured_keep"),
+        message: "Telegram token already configured. Keep it?",
         initialValue: true,
       });
       if (!keep) {
         token = String(
           await prompter.text({
             message: "Enter Telegram bot token",
-            validate: (value) =>
-              value?.trim() ? undefined : t("onboarding.telegram.enter_bot_token"),
+            validate: (value) => (value?.trim() ? undefined : "Required"),
           }),
         ).trim();
       }
@@ -302,8 +291,7 @@ export const telegramOnboardingAdapter: ChannelOnboardingAdapter = {
       token = String(
         await prompter.text({
           message: "Enter Telegram bot token",
-          validate: (value) =>
-            value?.trim() ? undefined : t("onboarding.telegram.enter_bot_token"),
+          validate: (value) => (value?.trim() ? undefined : "Required"),
         }),
       ).trim();
     }

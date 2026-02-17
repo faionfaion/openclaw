@@ -3,7 +3,6 @@ import JSON5 from "json5";
 import type { RuntimeEnv } from "../runtime.js";
 import { readConfigFileSnapshot, writeConfigFile } from "../config/config.js";
 import { danger, info } from "../globals.js";
-import { t } from "../i18n/index.js";
 import { defaultRuntime } from "../runtime.js";
 import { formatDocsLink } from "../terminal/links.js";
 import { theme } from "../terminal/theme.js";
@@ -220,7 +219,7 @@ async function loadValidConfig(runtime: RuntimeEnv = defaultRuntime) {
 function parseRequiredPath(path: string): PathSegment[] {
   const parsedPath = parsePath(path);
   if (parsedPath.length === 0) {
-    throw new Error(t("cli.config.path_empty"));
+    throw new Error("Path is empty.");
   }
   return parsedPath;
 }
@@ -281,7 +280,9 @@ export async function runConfigUnset(opts: { path: string; runtime?: RuntimeEnv 
 export function registerConfigCli(program: Command) {
   const cmd = program
     .command("config")
-    .description("Config helpers (get/set/unset). Run without subcommand for the wizard.")
+    .description(
+      "Non-interactive config helpers (get/set/unset). Run without subcommand for the setup wizard.",
+    )
     .addHelpText(
       "after",
       () =>
@@ -317,7 +318,7 @@ export function registerConfigCli(program: Command) {
       try {
         const parsedPath = parsePath(path);
         if (parsedPath.length === 0) {
-          throw new Error(t("cli.config.path_empty"));
+          throw new Error("Path is empty.");
         }
         const parsedValue = parseValue(value, opts);
         const snapshot = await loadValidConfig();

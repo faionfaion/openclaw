@@ -1,15 +1,14 @@
 import type { CronPayload } from "../types.js";
-import { t } from "../../i18n/index.js";
 import { normalizeAgentId } from "../../routing/session-key.js";
 import { truncateUtf16Safe } from "../../utils.js";
 
 export function normalizeRequiredName(raw: unknown) {
   if (typeof raw !== "string") {
-    throw new Error(t("cron.job_name_required"));
+    throw new Error("cron job name is required");
   }
   const name = raw.trim();
   if (!name) {
-    throw new Error(t("cron.job_name_required"));
+    throw new Error("cron job name is required");
   }
   return name;
 }
@@ -38,6 +37,14 @@ export function normalizeOptionalAgentId(raw: unknown) {
     return undefined;
   }
   return normalizeAgentId(trimmed);
+}
+
+export function normalizeOptionalSessionKey(raw: unknown) {
+  if (typeof raw !== "string") {
+    return undefined;
+  }
+  const trimmed = raw.trim();
+  return trimmed || undefined;
 }
 
 export function inferLegacyName(job: {

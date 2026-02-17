@@ -12,7 +12,6 @@ import path from "node:path";
 import * as readline from "node:readline";
 import { Readable, Writable } from "node:stream";
 import { fileURLToPath } from "node:url";
-import { t } from "../i18n/index.js";
 import { ensureOpenClawCliOnPath } from "../infra/path-env.js";
 import { DANGEROUS_ACP_TOOLS } from "../security/dangerous-tools.js";
 
@@ -338,7 +337,7 @@ export async function createAcpClient(opts: AcpClientOptions = {}): Promise<AcpC
   });
 
   if (!agent.stdin || !agent.stdout) {
-    throw new Error(t("acp.stdio_pipes_failed"));
+    throw new Error("Failed to create ACP stdio pipes");
   }
 
   const input = Writable.toWeb(agent.stdin);
@@ -388,7 +387,7 @@ export async function runAcpClientInteractive(opts: AcpClientOptions = {}): Prom
     output: process.stdout,
   });
 
-  console.log(t("acp.client_title"));
+  console.log("OpenClaw ACP client");
   console.log(`Session: ${sessionId}`);
   console.log('Type a prompt, or "exit" to quit.\n');
 

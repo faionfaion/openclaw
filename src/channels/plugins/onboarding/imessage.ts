@@ -3,7 +3,6 @@ import type { DmPolicy } from "../../../config/types.js";
 import type { WizardPrompter } from "../../../wizard/prompts.js";
 import type { ChannelOnboardingAdapter, ChannelOnboardingDmPolicy } from "../onboarding-types.js";
 import { detectBinary } from "../../../commands/onboard-helpers.js";
-import { t } from "../../../i18n/index.js";
 import {
   listIMessageAccountIds,
   resolveDefaultIMessageAccountId,
@@ -12,7 +11,7 @@ import {
 import { normalizeIMessageHandle } from "../../../imessage/targets.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../routing/session-key.js";
 import { formatDocsLink } from "../../../terminal/links.js";
-import { addWildcardAllowFrom, promptAccountId } from "./helpers.js";
+import { addWildcardAllowFrom, mergeAllowFromEntries, promptAccountId } from "./helpers.js";
 
 const channel = "imessage" as const;
 
@@ -88,24 +87,24 @@ async function promptIMessageAllowFrom(params: {
   await params.prompter.note(
     [
       "Allowlist iMessage DMs by handle or chat target.",
-      t("onboarding.imessage.allowlist_description"),
+      "Examples:",
       "- +15555550123",
       "- user@example.com",
       "- chat_id:123",
       "- chat_guid:... or chat_identifier:...",
-      t("onboarding.common.multiple_entries"),
+      "Multiple entries: comma-separated.",
       `Docs: ${formatDocsLink("/imessage", "imessage")}`,
     ].join("\n"),
     "iMessage allowlist",
   );
   const entry = await params.prompter.text({
-    message: t("onboarding.imessage.allowfrom_message"),
+    message: "iMessage allowFrom (handle or chat_id)",
     placeholder: "+15555550123, user@example.com, chat_id:123",
     initialValue: existing[0] ? String(existing[0]) : undefined,
     validate: (value) => {
       const raw = String(value ?? "").trim();
       if (!raw) {
-        return t("onboarding.validation.required");
+        return "Required";
       }
       const parts = parseIMessageAllowFromInput(raw);
       for (const part of parts) {
@@ -121,13 +120,13 @@ async function promptIMessageAllowFrom(params: {
         }
         if (part.toLowerCase().startsWith("chat_guid:")) {
           if (!part.slice("chat_guid:".length).trim()) {
-            return t("onboarding.validation.invalid_chat_guid");
+            return "Invalid chat_guid entry";
           }
           continue;
         }
         if (part.toLowerCase().startsWith("chat_identifier:")) {
           if (!part.slice("chat_identifier:".length).trim()) {
-            return t("onboarding.validation.invalid_chat_identifier");
+            return "Invalid chat_identifier entry";
           }
           continue;
         }
@@ -139,12 +138,12 @@ async function promptIMessageAllowFrom(params: {
     },
   });
   const parts = parseIMessageAllowFromInput(String(entry));
-  const unique = [...new Set(parts)];
+  const unique = mergeAllowFromEntries(undefined, parts);
   return setIMessageAllowFrom(params.cfg, accountId, unique);
 }
 
 const dmPolicy: ChannelOnboardingDmPolicy = {
-  label: t("onboarding.imessage.label"),
+  label: "iMessage",
   channel,
   policyKey: "channels.imessage.dmPolicy",
   allowFromKey: "channels.imessage.allowFrom",
@@ -173,7 +172,7 @@ export const imessageOnboardingAdapter: ChannelOnboardingAdapter = {
       configured,
       statusLines: [
         `iMessage: ${configured ? "configured" : "needs setup"}`,
-        `imsg: ${imessageCliDetected ? t("onboarding.imessage.imsg_found") : "missing"} (${imessageCliPath})`,
+        `imsg: ${imessageCliDetected ? "found" : "missing"} (${imessageCliPath})`,
       ],
       selectionHint: imessageCliDetected ? "imsg found" : "imsg missing",
       quickstartScore: imessageCliDetected ? 1 : 0,
@@ -189,7 +188,7 @@ export const imessageOnboardingAdapter: ChannelOnboardingAdapter = {
       imessageAccountId = await promptAccountId({
         cfg,
         prompter,
-        label: t("onboarding.imessage.label"),
+        label: "iMessage",
         currentId: imessageAccountId,
         listAccountIds: listIMessageAccountIds,
         defaultAccountId: defaultIMessageAccountId,
@@ -205,16 +204,13 @@ export const imessageOnboardingAdapter: ChannelOnboardingAdapter = {
     const cliDetected = await detectBinary(resolvedCliPath);
     if (!cliDetected) {
       const entered = await prompter.text({
-        message: t("onboarding.imessage.cli_path_message"),
+        message: "imsg CLI path",
         initialValue: resolvedCliPath,
-        validate: (value) => (value?.trim() ? undefined : t("onboarding.validation.required")),
+        validate: (value) => (value?.trim() ? undefined : "Required"),
       });
       resolvedCliPath = String(entered).trim();
       if (!resolvedCliPath) {
-        await prompter.note(
-          "imsg CLI path required to enable iMessage.",
-          t("onboarding.imessage.label"),
-        );
+        await prompter.note("imsg CLI path required to enable iMessage.", "iMessage");
       }
     }
 
@@ -258,7 +254,7 @@ export const imessageOnboardingAdapter: ChannelOnboardingAdapter = {
         "This is still a work in progress.",
         "Ensure OpenClaw has Full Disk Access to Messages DB.",
         "Grant Automation permission for Messages when prompted.",
-        t("onboarding.imessage.setup_tips"),
+        "List chats with: imsg chats --limit 20",
         `Docs: ${formatDocsLink("/imessage", "imessage")}`,
       ].join("\n"),
       "iMessage next steps",

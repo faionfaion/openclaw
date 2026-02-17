@@ -1,6 +1,5 @@
 import type { ElevatedLevel, ReasoningLevel } from "./directives.js";
 import { formatCliCommand } from "../../cli/command-format.js";
-import { t } from "../../i18n/index.js";
 
 export const SYSTEM_MARK = "⚙️";
 
@@ -23,22 +22,22 @@ export const formatElevatedRuntimeHint = () =>
 
 export const formatElevatedEvent = (level: ElevatedLevel) => {
   if (level === "full") {
-    return t("system.elevated_full");
+    return "Elevated FULL — exec runs on host with auto-approval.";
   }
   if (level === "ask" || level === "on") {
-    return t("system.elevated_ask");
+    return "Elevated ASK — exec runs on host; approvals may still apply.";
   }
-  return t("system.elevated_off");
+  return "Elevated OFF — exec stays in sandbox.";
 };
 
 export const formatReasoningEvent = (level: ReasoningLevel) => {
   if (level === "stream") {
-    return t("system.reasoning_stream");
+    return "Reasoning STREAM — emit live <think>.";
   }
   if (level === "on") {
-    return t("system.reasoning_on");
+    return "Reasoning ON — include <think>.";
   }
-  return t("system.reasoning_off");
+  return "Reasoning OFF — hide <think>.";
 };
 
 export function enqueueModeSwitchEvents(params: {

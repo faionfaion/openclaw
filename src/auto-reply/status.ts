@@ -43,7 +43,10 @@ import {
   type ChatCommandDefinition,
 } from "./commands-registry.js";
 
-type AgentConfig = Partial<NonNullable<NonNullable<OpenClawConfig["agents"]>["defaults"]>>;
+type AgentDefaults = NonNullable<NonNullable<OpenClawConfig["agents"]>["defaults"]>;
+type AgentConfig = Partial<AgentDefaults> & {
+  model?: AgentDefaults["model"] | string;
+};
 
 export const formatTokenCount = formatTokenCountShared;
 
@@ -73,7 +76,7 @@ type StatusArgs = {
   usageLine?: string;
   timeLine?: string;
   queue?: QueueStatus;
-  mediaDecisions?: MediaUnderstandingDecision[];
+  mediaDecisions?: ReadonlyArray<MediaUnderstandingDecision>;
   subagentsLine?: string;
   includeTranscriptUsage?: boolean;
   now?: number;
@@ -259,7 +262,7 @@ const formatUsagePair = (input?: number | null, output?: number | null) => {
   return `🧮 Tokens: ${inputLabel} in / ${outputLabel} out`;
 };
 
-const formatMediaUnderstandingLine = (decisions?: MediaUnderstandingDecision[]) => {
+const formatMediaUnderstandingLine = (decisions?: ReadonlyArray<MediaUnderstandingDecision>) => {
   if (!decisions || decisions.length === 0) {
     return null;
   }

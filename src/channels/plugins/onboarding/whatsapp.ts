@@ -7,7 +7,6 @@ import type { ChannelOnboardingAdapter } from "../onboarding-types.js";
 import { loginWeb } from "../../../channel-web.js";
 import { formatCliCommand } from "../../../cli/command-format.js";
 import { mergeWhatsAppConfig } from "../../../config/merge-config.js";
-import { t } from "../../../i18n/index.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../routing/session-key.js";
 import { formatDocsLink } from "../../../terminal/links.js";
 import { normalizeE164, pathExists } from "../../../utils.js";
@@ -16,7 +15,7 @@ import {
   resolveDefaultWhatsAppAccountId,
   resolveWhatsAppAuthDir,
 } from "../../../web/accounts.js";
-import { promptAccountId } from "./helpers.js";
+import { mergeAllowFromEntries, promptAccountId } from "./helpers.js";
 
 const channel = "whatsapp" as const;
 
@@ -49,13 +48,13 @@ async function promptWhatsAppOwnerAllowFrom(params: {
     "WhatsApp number",
   );
   const entry = await prompter.text({
-    message: t("onboarding.whatsapp.personal_number_message"),
+    message: "Your personal WhatsApp number (the phone you will message from)",
     placeholder: "+15555550123",
     initialValue: existingAllowFrom[0],
     validate: (value) => {
       const raw = String(value ?? "").trim();
       if (!raw) {
-        return t("onboarding.validation.required");
+        return "Required";
       }
       const normalized = normalizeE164(raw);
       if (!normalized) {
@@ -67,17 +66,38 @@ async function promptWhatsAppOwnerAllowFrom(params: {
 
   const normalized = normalizeE164(String(entry).trim());
   if (!normalized) {
-    throw new Error(t("onboarding.whatsapp.invalid_owner_number"));
+    throw new Error("Invalid WhatsApp owner number (expected E.164 after validation).");
   }
   const merged = [
     ...existingAllowFrom
       .filter((item) => item !== "*")
       .map((item) => normalizeE164(item))
-      .filter(Boolean),
+      .filter((item): item is string => typeof item === "string" && item.trim().length > 0),
     normalized,
   ];
-  const allowFrom = [...new Set(merged.filter(Boolean))];
+  const allowFrom = mergeAllowFromEntries(undefined, merged);
   return { normalized, allowFrom };
+}
+
+async function applyWhatsAppOwnerAllowlist(params: {
+  cfg: OpenClawConfig;
+  prompter: WizardPrompter;
+  existingAllowFrom: string[];
+  title: string;
+  messageLines: string[];
+}): Promise<OpenClawConfig> {
+  const { normalized, allowFrom } = await promptWhatsAppOwnerAllowFrom({
+    prompter: params.prompter,
+    existingAllowFrom: params.existingAllowFrom,
+  });
+  let next = setWhatsAppSelfChatMode(params.cfg, true);
+  next = setWhatsAppDmPolicy(next, "allowlist");
+  next = setWhatsAppAllowFrom(next, allowFrom);
+  await params.prompter.note(
+    [...params.messageLines, `- allowFrom includes ${normalized}`].join("\n"),
+    params.title,
+  );
+  return next;
 }
 
 async function promptWhatsAppAllowFrom(
@@ -91,23 +111,18 @@ async function promptWhatsAppAllowFrom(
   const existingLabel = existingAllowFrom.length > 0 ? existingAllowFrom.join(", ") : "unset";
 
   if (options?.forceAllowlist) {
-    const { normalized, allowFrom } = await promptWhatsAppOwnerAllowFrom({
+    return await applyWhatsAppOwnerAllowlist({
+      cfg,
       prompter,
       existingAllowFrom,
+      title: "WhatsApp allowlist",
+      messageLines: ["Allowlist mode enabled."],
     });
-    let next = setWhatsAppSelfChatMode(cfg, true);
-    next = setWhatsAppDmPolicy(next, "allowlist");
-    next = setWhatsAppAllowFrom(next, allowFrom);
-    await prompter.note(
-      ["Allowlist mode enabled.", `- allowFrom includes ${normalized}`].join("\n"),
-      "WhatsApp allowlist",
-    );
-    return next;
   }
 
   await prompter.note(
     [
-      t("onboarding.whatsapp.dm_policy_description"),
+      "WhatsApp direct chats are gated by `channels.whatsapp.dmPolicy` + `channels.whatsapp.allowFrom`.",
       "- pairing (default): unknown senders get a pairing code; owner approves",
       "- allowlist: unknown senders are blocked",
       '- open: public inbound DMs (requires allowFrom to include "*")',
@@ -120,42 +135,33 @@ async function promptWhatsAppAllowFrom(
   );
 
   const phoneMode = await prompter.select({
-    message: t("onboarding.whatsapp.phone_setup_message"),
+    message: "WhatsApp phone setup",
     options: [
       { value: "personal", label: "This is my personal phone number" },
-      {
-        value: t("onboarding.whatsapp.personal_phone_option"),
-        label: "Separate phone just for OpenClaw",
-      },
+      { value: "separate", label: "Separate phone just for OpenClaw" },
     ],
   });
 
   if (phoneMode === "personal") {
-    const { normalized, allowFrom } = await promptWhatsAppOwnerAllowFrom({
+    return await applyWhatsAppOwnerAllowlist({
+      cfg,
       prompter,
       existingAllowFrom,
-    });
-    let next = setWhatsAppSelfChatMode(cfg, true);
-    next = setWhatsAppDmPolicy(next, "allowlist");
-    next = setWhatsAppAllowFrom(next, allowFrom);
-    await prompter.note(
-      [
-        t("onboarding.whatsapp.personal_phone_enabled"),
+      title: "WhatsApp personal phone",
+      messageLines: [
+        "Personal phone mode enabled.",
         "- dmPolicy set to allowlist (pairing skipped)",
-        `- allowFrom includes ${normalized}`,
-      ].join("\n"),
-      "WhatsApp personal phone",
-    );
-    return next;
+      ],
+    });
   }
 
   const policy = (await prompter.select({
-    message: t("onboarding.whatsapp.dm_policy_message"),
+    message: "WhatsApp DM policy",
     options: [
       { value: "pairing", label: "Pairing (recommended)" },
       { value: "allowlist", label: "Allowlist only (block unknown senders)" },
       { value: "open", label: "Open (public inbound DMs)" },
-      { value: "disabled", label: t("onboarding.whatsapp.policy_disabled") },
+      { value: "disabled", label: "Disabled (ignore WhatsApp DMs)" },
     ],
   })) as DmPolicy;
 
@@ -174,23 +180,17 @@ async function promptWhatsAppAllowFrom(
           { value: "keep", label: "Keep current allowFrom" },
           {
             value: "unset",
-            label: t("onboarding.whatsapp.unset_allowfrom"),
+            label: "Unset allowFrom (use pairing approvals only)",
           },
-          {
-            value: t("onboarding.whatsapp.set_allowfrom_specific"),
-            label: "Set allowFrom to specific numbers",
-          },
+          { value: "list", label: "Set allowFrom to specific numbers" },
         ] as const)
       : ([
           { value: "unset", label: "Unset allowFrom (default)" },
-          {
-            value: t("onboarding.whatsapp.set_allowfrom_specific"),
-            label: "Set allowFrom to specific numbers",
-          },
+          { value: "list", label: "Set allowFrom to specific numbers" },
         ] as const);
 
   const mode = await prompter.select({
-    message: t("onboarding.whatsapp.allowfrom_message"),
+    message: "WhatsApp allowFrom (optional pre-allowlist)",
     options: allowOptions.map((opt) => ({
       value: opt.value,
       label: opt.label,
@@ -203,19 +203,19 @@ async function promptWhatsAppAllowFrom(
     next = setWhatsAppAllowFrom(next, undefined);
   } else {
     const allowRaw = await prompter.text({
-      message: t("onboarding.whatsapp.allowed_numbers_message"),
+      message: "Allowed sender numbers (comma-separated, E.164)",
       placeholder: "+15555550123, +447700900123",
       validate: (value) => {
         const raw = String(value ?? "").trim();
         if (!raw) {
-          return t("onboarding.validation.required");
+          return "Required";
         }
         const parts = raw
           .split(/[\n,;]+/g)
           .map((p) => p.trim())
           .filter(Boolean);
         if (parts.length === 0) {
-          return t("onboarding.validation.required");
+          return "Required";
         }
         for (const part of parts) {
           if (part === "*") {
@@ -234,8 +234,10 @@ async function promptWhatsAppAllowFrom(
       .split(/[\n,;]+/g)
       .map((p) => p.trim())
       .filter(Boolean);
-    const normalized = parts.map((part) => (part === "*" ? "*" : normalizeE164(part)));
-    const unique = [...new Set(normalized.filter(Boolean))];
+    const normalized = parts
+      .map((part) => (part === "*" ? "*" : normalizeE164(part)))
+      .filter((part): part is string => typeof part === "string" && part.trim().length > 0);
+    const unique = mergeAllowFromEntries(undefined, normalized);
     next = setWhatsAppAllowFrom(next, unique);
   }
 
@@ -276,7 +278,7 @@ export const whatsappOnboardingAdapter: ChannelOnboardingAdapter = {
         accountId = await promptAccountId({
           cfg,
           prompter,
-          label: t("onboarding.whatsapp.label"),
+          label: "WhatsApp",
           currentId: accountId,
           listAccountIds: listWhatsAppAccountIds,
           defaultAccountId: resolveDefaultWhatsAppAccountId(cfg),
@@ -313,7 +315,7 @@ export const whatsappOnboardingAdapter: ChannelOnboardingAdapter = {
     if (!linked) {
       await prompter.note(
         [
-          t("onboarding.whatsapp.scan_qr"),
+          "Scan the QR with WhatsApp on your phone.",
           `Credentials are stored under ${authDir}/ for future runs.`,
           `Docs: ${formatDocsLink("/whatsapp", "whatsapp")}`,
         ].join("\n"),
@@ -334,7 +336,7 @@ export const whatsappOnboardingAdapter: ChannelOnboardingAdapter = {
     } else if (!linked) {
       await prompter.note(
         `Run \`${formatCliCommand("openclaw channels login")}\` later to link WhatsApp.`,
-        t("onboarding.whatsapp.label"),
+        "WhatsApp",
       );
     }
 

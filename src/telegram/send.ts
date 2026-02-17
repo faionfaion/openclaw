@@ -6,6 +6,7 @@ import type {
 } from "@grammyjs/types";
 import { type ApiClientOptions, Bot, HttpError, InputFile } from "grammy";
 import type { RetryConfig } from "../infra/retry.js";
+import type { TelegramInlineButtons } from "./button-types.js";
 import { loadConfig } from "../config/config.js";
 import { resolveMarkdownTableMode } from "../config/markdown-tables.js";
 import { logVerbose } from "../globals.js";
@@ -32,6 +33,9 @@ import { recordSentMessage } from "./sent-message-cache.js";
 import { parseTelegramTarget, stripTelegramInternalPrefixes } from "./targets.js";
 import { resolveTelegramVoiceSend } from "./voice.js";
 
+type TelegramApi = Bot["api"];
+type TelegramApiOverride = Partial<TelegramApi>;
+
 type TelegramSendOpts = {
   token?: string;
   accountId?: string;
@@ -39,7 +43,7 @@ type TelegramSendOpts = {
   mediaUrl?: string;
   mediaLocalRoots?: readonly string[];
   maxBytes?: number;
-  api?: Bot["api"];
+  api?: TelegramApiOverride;
   retry?: RetryConfig;
   textMode?: "markdown" | "html";
   plainText?: string;
@@ -56,7 +60,7 @@ type TelegramSendOpts = {
   /** Forum topic thread ID (for forum supergroups) */
   messageThreadId?: number;
   /** Inline keyboard buttons (reply markup). */
-  buttons?: Array<Array<{ text: string; callback_data: string }>>;
+  buttons?: TelegramInlineButtons;
 };
 
 type TelegramSendResult = {
@@ -72,7 +76,7 @@ type TelegramMessageLike = {
 type TelegramReactionOpts = {
   token?: string;
   accountId?: string;
-  api?: Bot["api"];
+  api?: TelegramApiOverride;
   remove?: boolean;
   verbose?: boolean;
   retry?: RetryConfig;
@@ -227,13 +231,18 @@ function isTelegramHtmlParseError(err: unknown): boolean {
 function buildTelegramThreadReplyParams(params: {
   targetMessageThreadId?: number;
   messageThreadId?: number;
+  chatType?: "direct" | "group" | "unknown";
   replyToMessageId?: number;
   quoteText?: string;
 }): Record<string, unknown> {
   const messageThreadId =
     params.messageThreadId != null ? params.messageThreadId : params.targetMessageThreadId;
+  const threadScope = params.chatType === "direct" ? ("dm" as const) : ("forum" as const);
+  // Never blanket-strip DM message_thread_id by chat-id sign.
+  // Telegram supports DM topics; stripping silently misroutes topic replies.
+  // Keep thread id and rely on thread-not-found retry fallback for plain DMs.
   const threadSpec =
-    messageThreadId != null ? { id: messageThreadId, scope: "forum" as const } : undefined;
+    messageThreadId != null ? { id: messageThreadId, scope: threadScope } : undefined;
   const threadIdParams = buildTelegramThreadParams(threadSpec);
   const threadParams: Record<string, unknown> = threadIdParams ? { ...threadIdParams } : {};
 
@@ -277,13 +286,13 @@ async function withTelegramHtmlParseFallback<T>(params: {
 type TelegramApiContext = {
   cfg: ReturnType<typeof loadConfig>;
   account: ResolvedTelegramAccount;
-  api: Bot["api"];
+  api: TelegramApi;
 };
 
 function resolveTelegramApiContext(opts: {
   token?: string;
   accountId?: string;
-  api?: Bot["api"];
+  api?: TelegramApiOverride;
   cfg?: ReturnType<typeof loadConfig>;
 }): TelegramApiContext {
   const cfg = opts.cfg ?? loadConfig();
@@ -293,7 +302,7 @@ function resolveTelegramApiContext(opts: {
   });
   const token = resolveToken(opts.token, account);
   const client = resolveTelegramClientOptions(account);
-  const api = opts.api ?? new Bot(token, client ? { client } : undefined).api;
+  const api = (opts.api ?? new Bot(token, client ? { client } : undefined).api) as TelegramApi;
   return { cfg, account, api };
 }
 
@@ -364,6 +373,8 @@ async function withTelegramThreadFallback<T>(
   try {
     return await attempt(params, label);
   } catch (err) {
+    // Do not widen this fallback to cover "chat not found".
+    // chat-not-found is routing/auth/membership/token; stripping thread IDs hides root cause.
     if (!hasMessageThreadIdParam(params) || !isTelegramThreadNotFoundError(err)) {
       throw err;
     }
@@ -405,6 +416,7 @@ export function buildInlineKeyboard(
           (button): InlineKeyboardButton => ({
             text: button.text,
             callback_data: button.callback_data,
+            ...(button.style ? { style: button.style } : {}),
           }),
         ),
     )
@@ -429,6 +441,7 @@ export async function sendMessageTelegram(
   const threadParams = buildTelegramThreadReplyParams({
     targetMessageThreadId: target.messageThreadId,
     messageThreadId: opts.messageThreadId,
+    chatType: target.chatType,
     replyToMessageId: opts.replyToMessageId,
     quoteText: opts.quoteText,
   });
@@ -745,7 +758,7 @@ type TelegramDeleteOpts = {
   token?: string;
   accountId?: string;
   verbose?: boolean;
-  api?: Bot["api"];
+  api?: TelegramApiOverride;
   retry?: RetryConfig;
 };
 
@@ -773,13 +786,13 @@ type TelegramEditOpts = {
   token?: string;
   accountId?: string;
   verbose?: boolean;
-  api?: Bot["api"];
+  api?: TelegramApiOverride;
   retry?: RetryConfig;
   textMode?: "markdown" | "html";
   /** Controls whether link previews are shown in the edited message. */
   linkPreview?: boolean;
   /** Inline keyboard buttons (reply markup). Pass empty array to remove buttons. */
-  buttons?: Array<Array<{ text: string; callback_data: string }>>;
+  buttons?: TelegramInlineButtons;
   /** Optional config injection to avoid global loadConfig() (improves testability). */
   cfg?: ReturnType<typeof loadConfig>;
 };
@@ -890,7 +903,7 @@ type TelegramStickerOpts = {
   token?: string;
   accountId?: string;
   verbose?: boolean;
-  api?: Bot["api"];
+  api?: TelegramApiOverride;
   retry?: RetryConfig;
   /** Message ID to reply to (for threading) */
   replyToMessageId?: number;
@@ -920,6 +933,7 @@ export async function sendStickerTelegram(
   const threadParams = buildTelegramThreadReplyParams({
     targetMessageThreadId: target.messageThreadId,
     messageThreadId: opts.messageThreadId,
+    chatType: target.chatType,
     replyToMessageId: opts.replyToMessageId,
   });
   const hasThreadParams = Object.keys(threadParams).length > 0;
@@ -965,7 +979,7 @@ type TelegramPollOpts = {
   token?: string;
   accountId?: string;
   verbose?: boolean;
-  api?: Bot["api"];
+  api?: TelegramApiOverride;
   retry?: RetryConfig;
   /** Message ID to reply to (for threading) */
   replyToMessageId?: number;
@@ -998,6 +1012,7 @@ export async function sendPollTelegram(
   const threadParams = buildTelegramThreadReplyParams({
     targetMessageThreadId: target.messageThreadId,
     messageThreadId: opts.messageThreadId,
+    chatType: target.chatType,
     replyToMessageId: opts.replyToMessageId,
   });
 

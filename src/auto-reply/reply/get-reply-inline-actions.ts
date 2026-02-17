@@ -10,30 +10,19 @@ import type { TypingController } from "./typing.js";
 import { createOpenClawTools } from "../../agents/openclaw-tools.js";
 import { getChannelDock } from "../../channels/dock.js";
 import { logVerbose } from "../../globals.js";
-import { t } from "../../i18n/index.js";
 import { resolveGatewayMessageChannel } from "../../utils/message-channel.js";
-import { listChatCommands } from "../commands-registry.js";
-import { listSkillCommandsForWorkspace, resolveSkillCommandInvocation } from "../skill-commands.js";
+import {
+  listReservedChatSlashCommandNames,
+  listSkillCommandsForWorkspace,
+  resolveSkillCommandInvocation,
+} from "../skill-commands.js";
 import { getAbortMemory } from "./abort.js";
 import { buildStatusReply, handleCommands } from "./commands.js";
 import { isDirectiveOnly } from "./directive-handling.js";
 import { extractInlineSimpleCommand } from "./reply-inline.js";
 
 const builtinSlashCommands = (() => {
-  const reserved = new Set<string>();
-  for (const command of listChatCommands()) {
-    if (command.nativeName) {
-      reserved.add(command.nativeName.toLowerCase());
-    }
-    for (const alias of command.textAliases) {
-      const trimmed = alias.trim();
-      if (!trimmed.startsWith("/")) {
-        continue;
-      }
-      reserved.add(trimmed.slice(1).toLowerCase());
-    }
-  }
-  for (const name of [
+  return listReservedChatSlashCommandNames([
     "think",
     "verbose",
     "reasoning",
@@ -42,10 +31,7 @@ const builtinSlashCommands = (() => {
     "model",
     "status",
     "queue",
-  ]) {
-    reserved.add(name);
-  }
-  return reserved;
+  ]);
 })();
 
 function resolveSlashCommandName(commandBodyNormalized: string): string | null {
@@ -242,7 +228,7 @@ export async function handleInlineActions(params: {
           skillName: skillInvocation.command.skillName,
           // oxlint-disable-next-line typescript/no-explicit-any
         } as any);
-        const text = extractTextFromToolResult(result) ?? t("auto_reply.tools.done");
+        const text = extractTextFromToolResult(result) ?? "✅ Done.";
         typing.cleanup();
         return { kind: "reply", reply: { text } };
       } catch (err) {

@@ -22,7 +22,6 @@ import type {
 } from "../config/types.tts.js";
 import { normalizeChannelId } from "../channels/plugins/index.js";
 import { logVerbose } from "../globals.js";
-import { t } from "../i18n/index.js";
 import { stripMarkdown } from "../line/markdown-to-line.js";
 import { isVoiceCompatibleAudio } from "../media/audio.js";
 import { CONFIG_DIR, resolveUserPath } from "../utils.js";
@@ -357,12 +356,12 @@ export function buildTtsSystemPromptHint(cfg: OpenClawConfig): string | undefine
   const summarize = isSummarizationEnabled(prefsPath) ? "on" : "off";
   const autoHint =
     autoMode === "inbound"
-      ? t("tts.system_prompt.inbound_only")
+      ? "Only use TTS when the user's last message includes audio/voice."
       : autoMode === "tagged"
-        ? t("tts.system_prompt.tagged_only")
+        ? "Only use TTS when you include [[tts]] or [[tts:text]] tags."
         : undefined;
   return [
-    t("tts.system_prompt.voice_enabled"),
+    "Voice (TTS) is enabled.",
     autoHint,
     `Keep spoken text ≤${maxLength} chars to avoid auto-summary (summary ${summarize}).`,
     "Use [[tts:...]] and optional [[tts:text]]...[[/tts:text]] to control voice/expressiveness.",
@@ -552,14 +551,14 @@ export async function textToSpeech(params: {
   const provider = overrideProvider ?? userProvider;
   const providers = resolveTtsProviderOrder(provider);
 
-  let lastError: string | undefined;
+  const errors: string[] = [];
 
   for (const provider of providers) {
     const providerStart = Date.now();
     try {
       if (provider === "edge") {
         if (!config.edge.enabled) {
-          lastError = t("tts.errors.edge_disabled");
+          errors.push("edge: disabled");
           continue;
         }
 
@@ -627,7 +626,7 @@ export async function textToSpeech(params: {
 
       const apiKey = resolveTtsApiKey(config, provider);
       if (!apiKey) {
-        lastError = `No API key for ${provider}`;
+        errors.push(`${provider}: no API key`);
         continue;
       }
 
@@ -684,13 +683,13 @@ export async function textToSpeech(params: {
         voiceCompatible: output.voiceCompatible,
       };
     } catch (err) {
-      lastError = formatTtsProviderError(provider, err);
+      errors.push(formatTtsProviderError(provider, err));
     }
   }
 
   return {
     success: false,
-    error: `TTS conversion failed: ${lastError || "no providers available"}`,
+    error: `TTS conversion failed: ${errors.join("; ") || "no providers available"}`,
   };
 }
 
@@ -712,19 +711,19 @@ export async function textToSpeechTelephony(params: {
   const userProvider = getTtsProvider(config, prefsPath);
   const providers = resolveTtsProviderOrder(userProvider);
 
-  let lastError: string | undefined;
+  const errors: string[] = [];
 
   for (const provider of providers) {
     const providerStart = Date.now();
     try {
       if (provider === "edge") {
-        lastError = t("tts.errors.edge_unsupported_telephony");
+        errors.push("edge: unsupported for telephony");
         continue;
       }
 
       const apiKey = resolveTtsApiKey(config, provider);
       if (!apiKey) {
-        lastError = `No API key for ${provider}`;
+        errors.push(`${provider}: no API key`);
         continue;
       }
 
@@ -773,13 +772,13 @@ export async function textToSpeechTelephony(params: {
         sampleRate: output.sampleRate,
       };
     } catch (err) {
-      lastError = formatTtsProviderError(provider, err);
+      errors.push(formatTtsProviderError(provider, err));
     }
   }
 
   return {
     success: false,
-    error: `TTS conversion failed: ${lastError || "no providers available"}`,
+    error: `TTS conversion failed: ${errors.join("; ") || "no providers available"}`,
   };
 }
 

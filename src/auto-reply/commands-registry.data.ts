@@ -4,7 +4,6 @@ import type {
   CommandScope,
 } from "./commands-registry.types.js";
 import { listChannelDocks } from "../channels/dock.js";
-import { t } from "../i18n/index.js";
 import { getActivePluginRegistry } from "../plugins/runtime.js";
 import { COMMAND_ARG_FORMATTERS } from "./commands-args.js";
 import { listThinkingLevels } from "./thinking.js";
@@ -134,33 +133,33 @@ function buildChatCommands(): ChatCommandDefinition[] {
     defineChatCommand({
       key: "help",
       nativeName: "help",
-      description: t("commands.help.description"),
+      description: "Show available commands.",
       textAlias: "/help",
       category: "status",
     }),
     defineChatCommand({
       key: "commands",
       nativeName: "commands",
-      description: t("commands.commands.description"),
+      description: "List all slash commands.",
       textAlias: "/commands",
       category: "status",
     }),
     defineChatCommand({
       key: "skill",
       nativeName: "skill",
-      description: t("commands.skill.description"),
+      description: "Run a skill by name.",
       textAlias: "/skill",
       category: "tools",
       args: [
         {
           name: "name",
-          description: t("commands.skill.args.name"),
+          description: "Skill name",
           type: "string",
           required: true,
         },
         {
           name: "input",
-          description: t("commands.skill.args.input"),
+          description: "Skill input",
           type: "string",
           captureRemaining: true,
         },
@@ -169,13 +168,22 @@ function buildChatCommands(): ChatCommandDefinition[] {
     defineChatCommand({
       key: "status",
       nativeName: "status",
-      description: t("commands.status.description"),
+      description: "Show current status.",
       textAlias: "/status",
       category: "status",
     }),
     defineChatCommand({
+      key: "mesh",
+      nativeName: "mesh",
+      description: "Plan and run multi-step workflows.",
+      textAlias: "/mesh",
+      category: "tools",
+      argsParsing: "none",
+      acceptsArgs: true,
+    }),
+    defineChatCommand({
       key: "allowlist",
-      description: t("commands.allowlist.description"),
+      description: "List/add/remove allowlist entries.",
       textAlias: "/allowlist",
       acceptsArgs: true,
       scope: "text",
@@ -184,7 +192,7 @@ function buildChatCommands(): ChatCommandDefinition[] {
     defineChatCommand({
       key: "approve",
       nativeName: "approve",
-      description: t("commands.approve.description"),
+      description: "Approve or deny exec requests.",
       textAlias: "/approve",
       acceptsArgs: true,
       category: "management",
@@ -192,15 +200,31 @@ function buildChatCommands(): ChatCommandDefinition[] {
     defineChatCommand({
       key: "context",
       nativeName: "context",
-      description: t("commands.context.description"),
+      description: "Explain how context is built and used.",
       textAlias: "/context",
       acceptsArgs: true,
       category: "status",
     }),
     defineChatCommand({
+      key: "export-session",
+      nativeName: "export-session",
+      description: "Export current session to HTML file with full system prompt.",
+      textAliases: ["/export-session", "/export"],
+      acceptsArgs: true,
+      category: "status",
+      args: [
+        {
+          name: "path",
+          description: "Output path (default: workspace)",
+          type: "string",
+          required: false,
+        },
+      ],
+    }),
+    defineChatCommand({
       key: "tts",
       nativeName: "tts",
-      description: t("commands.tts.description"),
+      description: "Control text-to-speech (TTS).",
       textAlias: "/tts",
       category: "media",
       args: [
@@ -243,22 +267,22 @@ function buildChatCommands(): ChatCommandDefinition[] {
     defineChatCommand({
       key: "whoami",
       nativeName: "whoami",
-      description: t("commands.whoami.description"),
+      description: "Show your sender id.",
       textAlias: "/whoami",
       category: "status",
     }),
     defineChatCommand({
       key: "subagents",
       nativeName: "subagents",
-      description: t("commands.subagents.description"),
+      description: "List, kill, log, spawn, or steer subagent runs for this session.",
       textAlias: "/subagents",
       category: "management",
       args: [
         {
           name: "action",
-          description: "list | kill | log | info | send | steer",
+          description: "list | kill | log | info | send | steer | spawn",
           type: "string",
-          choices: ["list", "kill", "log", "info", "send", "steer"],
+          choices: ["list", "kill", "log", "info", "send", "steer", "spawn"],
         },
         {
           name: "target",
@@ -384,7 +408,7 @@ function buildChatCommands(): ChatCommandDefinition[] {
     defineChatCommand({
       key: "stop",
       nativeName: "stop",
-      description: t("commands.stop.description"),
+      description: "Stop the current run.",
       textAlias: "/stop",
       category: "session",
     }),
@@ -430,7 +454,7 @@ function buildChatCommands(): ChatCommandDefinition[] {
     defineChatCommand({
       key: "reset",
       nativeName: "reset",
-      description: t("commands.reset.description"),
+      description: "Reset the current session.",
       textAlias: "/reset",
       acceptsArgs: true,
       category: "session",
@@ -438,7 +462,7 @@ function buildChatCommands(): ChatCommandDefinition[] {
     defineChatCommand({
       key: "new",
       nativeName: "new",
-      description: t("commands.new.description"),
+      description: "Start a new session.",
       textAlias: "/new",
       acceptsArgs: true,
       category: "session",
@@ -446,7 +470,7 @@ function buildChatCommands(): ChatCommandDefinition[] {
     defineChatCommand({
       key: "compact",
       nativeName: "compact",
-      description: t("commands.compact.description"),
+      description: "Compact the session context.",
       textAlias: "/compact",
       category: "session",
       args: [
@@ -530,12 +554,31 @@ function buildChatCommands(): ChatCommandDefinition[] {
       category: "options",
       args: [
         {
-          name: "options",
-          description: "host=... security=... ask=... node=...",
+          name: "host",
+          description: "sandbox, gateway, or node",
+          type: "string",
+          choices: ["sandbox", "gateway", "node"],
+        },
+        {
+          name: "security",
+          description: "deny, allowlist, or full",
+          type: "string",
+          choices: ["deny", "allowlist", "full"],
+        },
+        {
+          name: "ask",
+          description: "off, on-miss, or always",
+          type: "string",
+          choices: ["off", "on-miss", "always"],
+        },
+        {
+          name: "node",
+          description: "Node id or name",
           type: "string",
         },
       ],
       argsParsing: "none",
+      formatArgs: COMMAND_ARG_FORMATTERS.exec,
     }),
     defineChatCommand({
       key: "model",

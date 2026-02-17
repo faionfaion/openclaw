@@ -2,7 +2,6 @@ import { webhookCallback } from "grammy";
 import { createServer } from "node:http";
 import type { OpenClawConfig } from "../config/config.js";
 import type { RuntimeEnv } from "../runtime.js";
-import { t } from "../i18n/index.js";
 import { isDiagnosticsEnabled } from "../infra/diagnostic-events.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import { installRequestBodyLimitGuard } from "../infra/http-body.js";
@@ -44,7 +43,7 @@ export async function startTelegramWebhook(opts: {
   if (!secret) {
     throw new Error(
       "Telegram webhook mode requires a non-empty secret token. " +
-        t("telegram.errors.webhook_secret_required"),
+        "Set channels.telegram.webhookSecret in your config.",
     );
   }
   const runtime = opts.runtime ?? defaultRuntime;

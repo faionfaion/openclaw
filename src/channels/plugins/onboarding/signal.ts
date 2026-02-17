@@ -5,7 +5,6 @@ import type { ChannelOnboardingAdapter, ChannelOnboardingDmPolicy } from "../onb
 import { formatCliCommand } from "../../../cli/command-format.js";
 import { detectBinary } from "../../../commands/onboard-helpers.js";
 import { installSignalCli } from "../../../commands/signal-install.js";
-import { t } from "../../../i18n/index.js";
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "../../../routing/session-key.js";
 import {
   listSignalAccountIds,
@@ -14,13 +13,14 @@ import {
 } from "../../../signal/accounts.js";
 import { formatDocsLink } from "../../../terminal/links.js";
 import { normalizeE164 } from "../../../utils.js";
-import { addWildcardAllowFrom, promptAccountId } from "./helpers.js";
+import { addWildcardAllowFrom, mergeAllowFromEntries, promptAccountId } from "./helpers.js";
 
 const channel = "signal" as const;
 const MIN_E164_DIGITS = 5;
 const MAX_E164_DIGITS = 15;
 const DIGITS_ONLY = /^\d+$/;
-const INVALID_SIGNAL_ACCOUNT_ERROR = t("onboarding.validation.invalid_e164");
+const INVALID_SIGNAL_ACCOUNT_ERROR =
+  "Invalid E.164 phone number (must start with + and country code, e.g. +15555550123)";
 
 export function normalizeSignalAccountInput(value: string | null | undefined): string | null {
   const trimmed = value?.trim();
@@ -114,22 +114,22 @@ async function promptSignalAllowFrom(params: {
   await params.prompter.note(
     [
       "Allowlist Signal DMs by sender id.",
-      t("onboarding.signal.allowlist_description"),
+      "Examples:",
       "- +15555550123",
       "- uuid:123e4567-e89b-12d3-a456-426614174000",
-      t("onboarding.common.multiple_entries"),
+      "Multiple entries: comma-separated.",
       `Docs: ${formatDocsLink("/signal", "signal")}`,
     ].join("\n"),
     "Signal allowlist",
   );
   const entry = await params.prompter.text({
-    message: t("onboarding.signal.allowfrom_message"),
+    message: "Signal allowFrom (E.164 or uuid)",
     placeholder: "+15555550123, uuid:123e4567-e89b-12d3-a456-426614174000",
     initialValue: existing[0] ? String(existing[0]) : undefined,
     validate: (value) => {
       const raw = String(value ?? "").trim();
       if (!raw) {
-        return t("onboarding.validation.required");
+        return "Required";
       }
       const parts = parseSignalAllowFromInput(raw);
       for (const part of parts) {
@@ -138,7 +138,7 @@ async function promptSignalAllowFrom(params: {
         }
         if (part.toLowerCase().startsWith("uuid:")) {
           if (!part.slice("uuid:".length).trim()) {
-            return t("onboarding.validation.invalid_uuid");
+            return "Invalid uuid entry";
           }
           continue;
         }
@@ -153,26 +153,27 @@ async function promptSignalAllowFrom(params: {
     },
   });
   const parts = parseSignalAllowFromInput(String(entry));
-  const normalized = parts
-    .map((part) => {
-      if (part === "*") {
-        return "*";
-      }
-      if (part.toLowerCase().startsWith("uuid:")) {
-        return `uuid:${part.slice(5).trim()}`;
-      }
-      if (isUuidLike(part)) {
-        return `uuid:${part}`;
-      }
-      return normalizeE164(part);
-    })
-    .filter(Boolean);
-  const unique = [...new Set(normalized)];
+  const normalized = parts.map((part) => {
+    if (part === "*") {
+      return "*";
+    }
+    if (part.toLowerCase().startsWith("uuid:")) {
+      return `uuid:${part.slice(5).trim()}`;
+    }
+    if (isUuidLike(part)) {
+      return `uuid:${part}`;
+    }
+    return normalizeE164(part);
+  });
+  const unique = mergeAllowFromEntries(
+    undefined,
+    normalized.filter((part): part is string => typeof part === "string" && part.trim().length > 0),
+  );
   return setSignalAllowFrom(params.cfg, accountId, unique);
 }
 
 const dmPolicy: ChannelOnboardingDmPolicy = {
-  label: t("onboarding.signal.label"),
+  label: "Signal",
   channel,
   policyKey: "channels.signal.dmPolicy",
   allowFromKey: "channels.signal.allowFrom",
@@ -217,7 +218,7 @@ export const signalOnboardingAdapter: ChannelOnboardingAdapter = {
       signalAccountId = await promptAccountId({
         cfg,
         prompter,
-        label: t("onboarding.signal.label"),
+        label: "Signal",
         currentId: signalAccountId,
         listAccountIds: listSignalAccountIds,
         defaultAccountId: defaultSignalAccountId,
@@ -245,21 +246,12 @@ export const signalOnboardingAdapter: ChannelOnboardingAdapter = {
           if (result.ok && result.cliPath) {
             cliDetected = true;
             resolvedCliPath = result.cliPath;
-            await prompter.note(
-              `Installed signal-cli at ${result.cliPath}`,
-              t("onboarding.signal.label"),
-            );
+            await prompter.note(`Installed signal-cli at ${result.cliPath}`, "Signal");
           } else if (!result.ok) {
-            await prompter.note(
-              result.error ?? "signal-cli install failed.",
-              t("onboarding.signal.label"),
-            );
+            await prompter.note(result.error ?? "signal-cli install failed.", "Signal");
           }
         } catch (err) {
-          await prompter.note(
-            `signal-cli install failed: ${String(err)}`,
-            t("onboarding.signal.label"),
-          );
+          await prompter.note(`signal-cli install failed: ${String(err)}`, "Signal");
         }
       }
     }
@@ -267,7 +259,7 @@ export const signalOnboardingAdapter: ChannelOnboardingAdapter = {
     if (!cliDetected) {
       await prompter.note(
         "signal-cli not found. Install it, then rerun this step or set channels.signal.cliPath.",
-        t("onboarding.signal.label"),
+        "Signal",
       );
     }
 
@@ -277,7 +269,7 @@ export const signalOnboardingAdapter: ChannelOnboardingAdapter = {
       if (!normalizedExisting) {
         await prompter.note(
           "Existing Signal account isn't a valid E.164 number. Please enter it again.",
-          t("onboarding.signal.label"),
+          "Signal",
         );
         account = "";
       } else {
@@ -295,7 +287,7 @@ export const signalOnboardingAdapter: ChannelOnboardingAdapter = {
     if (!account) {
       const rawAccount = String(
         await prompter.text({
-          message: t("onboarding.signal.bot_number_message"),
+          message: "Signal bot number (E.164)",
           validate: (value) =>
             normalizeSignalAccountInput(String(value ?? ""))
               ? undefined
