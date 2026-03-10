@@ -33,6 +33,8 @@ export class UserbotClient {
     const session = new StringSession(config.session ?? "");
     this.gramClient = new TelegramClient(session, config.apiId, config.apiHash, {
       connectionRetries: config.connectionRetries ?? DEFAULT_CONNECTION_RETRIES,
+      updateWorkers: 1,
+      floodSleepThreshold: 60,
     });
   }
 
