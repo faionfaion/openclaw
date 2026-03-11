@@ -75,11 +75,16 @@ async function dispatchInboundMessage(
   msg: InboundTelegramMessage,
   ctx: ChannelGatewayContext<ResolvedTelegramUserbotAccount>,
 ): Promise<void> {
+  console.log(
+    `[telegram-userbot] [dispatch] dispatchInboundMessage called for chatId=${msg.chatId} text="${msg.text}"`,
+  );
   const core = ctx.channelRuntime;
   if (!core) {
+    console.log(`[telegram-userbot] [dispatch] channelRuntime not available, skipping`);
     ctx.log?.warn?.(`[${ctx.accountId}] channelRuntime not available, skipping inbound dispatch`);
     return;
   }
+  console.log(`[telegram-userbot] [dispatch] channelRuntime available, proceeding...`);
 
   incrementMetric(ctx.accountId, "messagesReceived");
 
@@ -154,6 +159,9 @@ async function dispatchInboundMessage(
     accountId: route.accountId,
   });
 
+  console.log(
+    `[telegram-userbot] [dispatch] calling dispatchReplyWithBufferedBlockDispatcher, sessionKey=${ctxPayload.SessionKey}`,
+  );
   await core.reply.dispatchReplyWithBufferedBlockDispatcher({
     ctx: ctxPayload,
     cfg: ctx.cfg,
