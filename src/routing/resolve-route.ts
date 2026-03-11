@@ -624,7 +624,10 @@ export function resolveAgentRoute(input: ResolveAgentRouteInput): ResolvedAgentR
   const teamId = normalizeId(input.teamId);
   const memberRoleIds = input.memberRoleIds ?? [];
   const memberRoleIdSet = new Set(memberRoleIds);
-  const dmScope = input.cfg.session?.dmScope ?? "main";
+  const dmScope =
+    (channel ? input.cfg.session?.dmScopeByChannel?.[channel] : undefined) ??
+    input.cfg.session?.dmScope ??
+    "main";
   const identityLinks = input.cfg.session?.identityLinks;
   const shouldLogDebug = shouldLogVerbose();
   const parentPeer = input.parentPeer

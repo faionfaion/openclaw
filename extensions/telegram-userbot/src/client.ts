@@ -139,11 +139,25 @@ export class UserbotClient {
     this.assertConnected();
     try {
       const inputPeer = await resolvePeer(this.gramClient, peer);
-      const result = await this.gramClient.sendMessage(inputPeer, {
-        message: text,
-        replyTo: opts?.replyTo,
-        parseMode: opts?.parseMode,
-      });
+      let result;
+      try {
+        result = await this.gramClient.sendMessage(inputPeer, {
+          message: text,
+          replyTo: opts?.replyTo,
+          parseMode: opts?.parseMode,
+        });
+      } catch (innerErr) {
+        // GramJS bug: _getResponseMessage spreads result.users/result.chats without
+        // null-checking, throwing "undefined is not iterable" even though the message
+        // was successfully delivered. Treat this as a partial success.
+        if (
+          innerErr instanceof TypeError &&
+          String((innerErr as TypeError).message).includes("not iterable")
+        ) {
+          return { messageId: 0, date: 0 };
+        }
+        throw innerErr;
+      }
       return toSendResult(result);
     } catch (err) {
       throw wrapGramJSError(err);

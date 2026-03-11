@@ -106,6 +106,8 @@ export type SessionConfig = {
   scope?: SessionScope;
   /** DM session scoping (default: "main"). */
   dmScope?: DmScope;
+  /** Per-channel DM session scope overrides (e.g. { "telegram-userbot": "per-channel-peer" }). */
+  dmScopeByChannel?: Record<string, DmScope>;
   /** Map platform-prefixed identities (e.g. "telegram:123") to canonical DM peers. */
   identityLinks?: Record<string, string[]>;
   resetTriggers?: string[];

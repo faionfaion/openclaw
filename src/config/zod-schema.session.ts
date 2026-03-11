@@ -34,6 +34,17 @@ export const SessionSchema = z
         z.literal("per-account-channel-peer"),
       ])
       .optional(),
+    dmScopeByChannel: z
+      .record(
+        z.string(),
+        z.union([
+          z.literal("main"),
+          z.literal("per-peer"),
+          z.literal("per-channel-peer"),
+          z.literal("per-account-channel-peer"),
+        ]),
+      )
+      .optional(),
     identityLinks: z.record(z.string(), z.array(z.string())).optional(),
     resetTriggers: z.array(z.string()).optional(),
     idleMinutes: z.number().int().positive().optional(),
