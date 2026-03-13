@@ -5,6 +5,7 @@ import { createJiti } from "jiti";
 import type { OpenClawConfig } from "../config/config.js";
 import type { PluginInstallRecord } from "../config/types.plugins.js";
 import type { GatewayRequestHandler } from "../gateway/server-methods/types.js";
+import { registerTaskClassifierHook } from "../hooks/builtin/task-classifier-hook.js";
 import { openBoundaryFileSync } from "../infra/boundary-file-read.js";
 import { resolveOpenClawPackageRootSync } from "../infra/openclaw-root.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
@@ -510,6 +511,7 @@ function warnAboutUntrackedLoadedPlugins(params: {
 }
 
 function activatePluginRegistry(registry: PluginRegistry, cacheKey: string): void {
+  registerTaskClassifierHook(registry);
   setActivePluginRegistry(registry, cacheKey);
   initializeGlobalHookRunner(registry);
 }
