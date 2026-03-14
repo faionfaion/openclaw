@@ -5,6 +5,7 @@
  * and can be called from anywhere in the codebase.
  */
 
+import { registerTaskClassifierHook } from "../hooks/builtin/task-classifier-hook.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { createHookRunner, type HookRunner } from "./hooks.js";
 import type { PluginRegistry } from "./registry.js";
@@ -34,6 +35,9 @@ function getHookRunnerGlobalState(): HookRunnerGlobalState {
  * Called once when plugins are loaded during gateway startup.
  */
 export function initializeGlobalHookRunner(registry: PluginRegistry): void {
+  // Register builtin typed hooks before creating the hook runner
+  registerTaskClassifierHook(registry);
+
   const state = getHookRunnerGlobalState();
   state.registry = registry;
   state.hookRunner = createHookRunner(registry, {

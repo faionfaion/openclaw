@@ -1152,10 +1152,11 @@ describe("loadOpenClawPlugins", () => {
     });
 
     expect(registry.plugins.find((entry) => entry.id === "hook-policy")?.status).toBe("loaded");
-    expect(registry.typedHooks.map((entry) => entry.hookName)).toEqual([
-      "before_agent_start",
-      "before_model_resolve",
-    ]);
+    expect(
+      registry.typedHooks
+        .filter((entry) => entry.pluginId !== "builtin:task-classifier")
+        .map((entry) => entry.hookName),
+    ).toEqual(["before_agent_start", "before_model_resolve"]);
     const runner = createHookRunner(registry);
     const legacyResult = await runner.runBeforeAgentStart({ prompt: "hello", messages: [] }, {});
     expect(legacyResult).toEqual({
@@ -1194,10 +1195,11 @@ describe("loadOpenClawPlugins", () => {
       },
     });
 
-    expect(registry.typedHooks.map((entry) => entry.hookName)).toEqual([
-      "before_prompt_build",
-      "before_agent_start",
-    ]);
+    expect(
+      registry.typedHooks
+        .filter((entry) => entry.pluginId !== "builtin:task-classifier")
+        .map((entry) => entry.hookName),
+    ).toEqual(["before_prompt_build", "before_agent_start"]);
   });
 
   it("ignores unknown typed hooks from plugins and keeps loading", () => {
@@ -1220,7 +1222,11 @@ describe("loadOpenClawPlugins", () => {
     });
 
     expect(registry.plugins.find((entry) => entry.id === "hook-unknown")?.status).toBe("loaded");
-    expect(registry.typedHooks.map((entry) => entry.hookName)).toEqual(["before_model_resolve"]);
+    expect(
+      registry.typedHooks
+        .filter((entry) => entry.pluginId !== "builtin:task-classifier")
+        .map((entry) => entry.hookName),
+    ).toEqual(["before_model_resolve"]);
     const unknownHookDiagnostics = registry.diagnostics.filter((diag) =>
       String(diag.message).includes('unknown typed hook "'),
     );
